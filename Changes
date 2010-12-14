@@ -1,0 +1,24 @@
+Revision history for Perl extension Hwloc.
+
+0.04  2010/12/14
+      - rewrote from scratch using typemapping
+      - added OO-ish methods for hwloc_obj_t and hwloc_topology_t objects
+      - support for HWLOC_API_VERSION (undef) .. 0x00010100
+      - submitted to CPAN
+
+0.03  2010/12/07
+      - additional constants for hwloc_get_obj_data retrieval
+          HWLOC_ObjName       string or undef
+          HWLOC_ObjMemory     hashref
+          HWLOC_ObjChildren   array
+      - rewrote hwloc_get_obj_data with direct stack manipulation
+      - made 2nd arg to hwloc_get_obj_data optional,
+        if not present, return object data as hashref
+      - use perl type UV for unsigned C types
+
+0.02  2010/09/11
+      - constant definitions created by h2xs 1.23 with options
+          -O -n Hwloc /usr/local/hwloc-1.0.2/include/hwloc.h
+
+0.01  2010/08/18
+      - started project

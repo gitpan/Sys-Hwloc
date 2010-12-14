@@ -1,0 +1,118 @@
+Sys::Hwloc
+==========
+
+This is a perl binding for the Portable Hardware Locality (hwloc) library.
+See http://www.open-mpi.org/projects/hwloc/ for details.
+
+
+DEPENDENCIES
+
+This module requires hwloc >= 0.9
+
+Makefile.PL uses ExtUtils::MakeMaker to create the Makefile.
+
+Parts of the test suite need Test::More >= 0.89.
+
+The module was tested on some i686/intel64 machines
+running recent Linux. Other architectures were not tested.
+The Windows OS is currently not supported.
+
+
+INSTALLATION
+
+To install this module, type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+hwloc libraries and header files are searched for by using pkg-config.
+If they cannot be found, set the PKG_CONFIG_PATH environment variable
+to the directory where the file hwloc.pc is located.
+
+
+EXAMPLE SCRIPTS
+
+Look into the examples directory to get inspired.
+
+
+HWLOC API VERSION
+
+The configure step figures out the value of the HWLOC_API_VERSION constant
+from hwloc.h, and compiles and exports Hwloc functions accordingly.
+Thus, the Hwloc module depends on the hwloc version it was build against.
+Undefined results are got when another hwloc library version is used at
+runtime.
+
+This constant was introduced in hwloc 1.0. For earlier hwloc versions,
+the Hwloc module exports this constant with an undefined value. Thus,
+it can be used in a Perl script using Hwloc as follows to make it
+work with different HWLOC_API_VERSIONS:
+
+$proc_t = HWLOC_API_VERSION() ? HWLOC_OBJ_PU() : HWLOC_OBJ_PROC();
+
+To bind a Perl script to a specific HWLOC_API_VERSION, check it
+in a BEGIN block:
+
+BEGIN {
+  die "This script needs HWLOC_API_VERSION >= 0x00010000\n" unless
+    (HWLOC_API_VERSION && HWLOC_API_VERSION >= 0x00010000);
+}
+
+
+XML SUPPORT
+
+The configure step tries to figure out if the hwloc library was
+built with XML support. Checking is done by executing the lstopo
+command and trying to produce an XML output.
+
+Depending on the result, Hwloc functions dealing with XML
+are compiled and exported or not, and the special constant
+Hwloc::HWLOC_HAS_XML is exported with a true or false value.
+It can be used in Perl scripts using Hwloc as follows:
+
+if(HWLOC_HAS_XML) {
+  $topology->export_xml('-');
+} else {
+  die "Your hwloc lib was build without XML support";
+}
+
+
+TESTING
+
+The test suite runs tests against the hwloc topology of the current
+machine.
+
+Arbitrary topologies can be tested when Hwloc was compiled
+with XML support. Set the HWLOC_XMLFILE environment variable
+to the path of an XML file describing the topology,
+and run the test suite.
+
+The hwloc API docs do not specify what should be returned for strange
+input parameters of hwloc_get_depth_type() and the like.
+The test suite makes assumptions about these based on the behaviour
+of hwloc 1.0. Some tests may apparently fail when testing return values,
+if other versions are used and the hwloc API behaves differently.
+
+
+TODO
+
+- extend XML support by using XML::LibXML
+- implement cpuset support
+- implement nodeset support
+
+
+BUGS
+
+The Hwloc module was written by hand. Bugs are likely, but currently
+not known.
+
+
+COPYRIGHT AND LICENSE
+
+Copyright (C) 2010 Bernd Kallies
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation or under the same terms as perl itself.
