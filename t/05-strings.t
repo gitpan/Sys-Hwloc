@@ -1,12 +1,24 @@
-# -----------------------------------------------------------------------------
-# String <-> Object conversion
+################################################################################
 #
-# $Id: 05-strings.t,v 1.4 2010/12/14 18:41:55 bzbkalli Exp $
-# -----------------------------------------------------------------------------
+#  Copyright 2010 Zuse Institute Berlin
+#
+#  This package and its accompanying libraries is free software; you can
+#  redistribute it and/or modify it under the terms of the GPL version 2.0,
+#  or the Artistic License 2.0. Refer to LICENSE for the full license text.
+#
+#  Please send comments to kallies@zib.de
+#
+################################################################################
+#
+# Test String <-> Object conversion
+#
+# $Id: 05-strings.t,v 1.7 2010/12/21 14:19:10 bzbkalli Exp $
+#
+################################################################################
 
 use Test::More 0.94;
 use strict;
-use Sys::Hwloc;
+use Sys::Hwloc 0.04;
 
 my $apiVersion = HWLOC_API_VERSION();
 my $proc_t     = $apiVersion ? HWLOC_OBJ_PU() : HWLOC_OBJ_PROC();
@@ -177,7 +189,7 @@ SKIP: {
 
   subtest "hwloc_obj_sprintf()" => sub {
 
-    plan tests => $nobjs * 3;
+    plan tests => $nobjs * 4;
 
     for(my $i = 0; $i < $depth; $i++) {
       my $n = hwloc_get_nbobjs_by_depth($t,$i);
@@ -205,10 +217,12 @@ SKIP: {
 	    };
 	    like($rc, qr/\S/, "hwloc_obj_sprintf($test)");
 	  }
-	  is($t->sprintf_obj($o,undef,1), $rc, $test."->sprintf_obj(1)");
+	  is($t->sprintf_obj($o,undef,1), $rc, "t->sprintf_obj($test)");
+	  is($o->sprintf(undef,1),        $rc, $test."->sprintf()");
 	} else {
 	  fail("hwloc_obj_sprintf($test)");
-	  fail($test."->sprintf_obj(1)");
+	  fail("t->sprintf_obj($test)");
+	  fail($test."->sprintf()");
 	}
       }
     }

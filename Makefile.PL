@@ -1,8 +1,22 @@
-###############################################################################
-# Makefile for perl wrapper around hwloc API
+################################################################################
 #
-# $Id: Makefile.PL,v 1.10 2010/12/14 18:41:54 bzbkalli Exp $
-###############################################################################
+#  Copyright 2010 Zuse Institute Berlin
+#
+#  This package and its accompanying libraries is free software; you can
+#  redistribute it and/or modify it under the terms of the GPL version 2.0,
+#  or the Artistic License 2.0. Refer to LICENSE for the full license text.
+#
+#  Please send comments to kallies@zib.de
+#
+################################################################################
+#
+# Makefile for Sys::Hwloc
+#
+# $Id: Makefile.PL,v 1.15 2010/12/21 19:50:31 bzbkalli Exp $
+#
+################################################################################
+
+use 5.006;
 
 use ExtUtils::MakeMaker;
 use Config;
@@ -11,6 +25,7 @@ use Config;
 	    NAME              => 'Sys::Hwloc',
 	    VERSION_FROM      => 'lib/Sys/Hwloc.pm',
 	    AUTHOR            => 'Bernd Kallies <kallies@zib.de>',
+	    LICENSE           => 'gpl, artistic_2',
 	    ABSTRACT          => 'Perl wrapper around the hwloc API',
 	    PREREQ_PM         => {
 				   'Test::More' => '0.89',
@@ -44,9 +59,12 @@ configure();
 WriteMakefile(
  	      %INFOS,
  	      INC       => "$CONFIGS{config}->{iflags}",
-              OPTIMIZE  => "$Config{optimize} -Wno-unused",
+              OPTIMIZE  => "$Config{optimize}",
  	      LDDLFLAGS => "$Config{lddlflags} $CONFIGS{config}->{libs}",
 	      PM_FILTER => "sed -e s/\@HWLOC_API_VERSION\@/$CONFIGS{HWLOC_API_VERSION}/",
+	      depend    => {
+			    "Hwloc.c" => "Hwloc.xs hwloc_cpuset.xsh hwloc_bitmap.xsh",
+			   },
  	     );
 
 if  (eval {require ExtUtils::Constant; 1}) {

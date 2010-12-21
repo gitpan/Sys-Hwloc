@@ -1,18 +1,30 @@
-# -----------------------------------------------------------------------------
+################################################################################
+#
+#  Copyright 2010 Zuse Institute Berlin
+#
+#  This package and its accompanying libraries is free software; you can
+#  redistribute it and/or modify it under the terms of the GPL version 2.0,
+#  or the Artistic License 2.0. Refer to LICENSE for the full license text.
+#
+#  Please send comments to kallies@zib.de
+#
+################################################################################
+#
 # Basic topology tests
 #
-# $Id: 02-topo.t,v 1.10 2010/12/14 18:41:55 bzbkalli Exp $
-# -----------------------------------------------------------------------------
+# $Id: 02-topo.t,v 1.13 2010/12/21 14:19:09 bzbkalli Exp $
+#
+################################################################################
 
 use Test::More 0.94;
 use strict;
-use Sys::Hwloc;
+use Sys::Hwloc 0.04;
 
 my $apiVersion = HWLOC_API_VERSION();
 my $proc_t     = $apiVersion ? HWLOC_OBJ_PU() : HWLOC_OBJ_PROC();
 my ($t, $rc, $ok);
 
-plan tests => 39;
+plan tests => 40;
 
 # --
 # Init topology, stop testing if this fails
@@ -117,7 +129,6 @@ hwloc_topology_destroy($t);
 # These should all croak
 # --
 
-$t  = undef;
 $rc = undef;
 
 eval "\$rc = hwloc_topology_ignore_type(\$t, HWLOC_OBJ_MISC)";
@@ -146,7 +157,7 @@ is($rc, undef, 'hwloc_topology_destroy(undef)');
 # --
 
 $t = Sys::Hwloc::Topology->init;
-isa_ok($t, 'Sys::Hwloc::Topology', 'hwloc_topology_init()') or
+isa_ok($t, 'Sys::Hwloc::Topology', 'Sys::Hwloc::Topology->init') or
   BAIL_OUT("Failed to initialize topology context via Sys::Hwloc::Topology->init");
 
 $rc = $t->is_thissystem;
@@ -220,4 +231,6 @@ is($rc, 0, 't->load') or
 # --
 
 $t->destroy;
-
+$rc = undef;
+eval ("\$rc = \$t->destroy; 1)");
+is($rc, undef, 't->destroy');

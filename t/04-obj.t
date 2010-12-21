@@ -1,16 +1,28 @@
-# -----------------------------------------------------------------------------
+################################################################################
+#
+#  Copyright 2010 Zuse Institute Berlin
+#
+#  This package and its accompanying libraries is free software; you can
+#  redistribute it and/or modify it under the terms of the GPL version 2.0,
+#  or the Artistic License 2.0. Refer to LICENSE for the full license text.
+#
+#  Please send comments to kallies@zib.de
+#
+################################################################################
+#
 # Retrieve topology objects of this machine, check object properties
 #
-# $Id: 04-obj.t,v 1.6 2010/12/14 21:33:53 bzbkalli Exp $
-# -----------------------------------------------------------------------------
+# $Id: 04-obj.t,v 1.13 2010/12/21 14:19:10 bzbkalli Exp $
+#
+################################################################################
 
 use Test::More 0.94;
 use strict;
-use Sys::Hwloc;
+use Sys::Hwloc 0.05;
 
-my $apiVersion = HWLOC_API_VERSION();
+my $apiVersion = HWLOC_XSAPI_VERSION();
 my $proc_t     = $apiVersion ? HWLOC_OBJ_PU() : HWLOC_OBJ_PROC();
-my ($t, $o, $rc, $nobjs, $depth, $test);
+my ($t, $o, $rc, $nobjs, $nnodes, $depth, $test);
 
 # --
 # Init topology, stop testing if this fails
@@ -43,7 +55,13 @@ for(my $i = 0; $i < $depth; $i++) {
 }
 BAIL_OUT("Topology seems to contain no objects") unless $nobjs;
 
-plan tests => $nobjs * 28 + 1;
+# --
+# Number of HWLOC_OBJ_NODE objects, needed for some tests
+# --
+
+$nnodes = hwloc_get_nbobjs_by_type($t,HWLOC_OBJ_NODE);
+
+plan tests => $nobjs * 30 + 1;
 
 # --
 # Init object types lookup table
@@ -576,9 +594,41 @@ for(my $i = 0; $i < $depth; $i++) {
       }
     }
 
+    # $o->cpuset
+    #   Should return Sys::Hwloc::Cpuset for hwloc < 1.1
+    #   Should return Sys::Hwloc::Bitmap for hwloc >= 1.1
+
+    $test = sprintf("hwloc_get_obj_by_depth(%d,%d)->cpuset", $i, $j);
+    $rc = $o->cpuset;
+    isa_ok($rc, ($apiVersion < 0x00010100) ? 'Sys::Hwloc::Cpuset' : 'Sys::Hwloc::Bitmap', $test);
+
   SKIP: {
 
-      skip 'Sys::Hwloc::Obj->infos', 3 unless ((defined $apiVersion) && ($apiVersion > 0x00010000));
+      skip 'Sys::Hwloc::Obj->nodeset', 1 unless ($apiVersion >= 0x00010000);
+
+      # $o->nodeset
+      #   Should return undef if topology does not contain HWLOC_OBJ_NODE objects
+      #   Otherwise:
+      #     Should return Sys::Hwloc::Cpuset for hwloc < 1.1
+      #     Should return Sys::Hwloc::Bitmap for hwloc >= 1.1
+
+      $test = sprintf("hwloc_get_obj_by_depth(%d,%d)->nodeset", $i, $j);
+      $rc = $o->nodeset;
+      if($apiVersion < 0x00010100) {
+	if($nnodes) {
+	  isa_ok($rc, 'Sys::Hwloc::Cpuset', $test);
+	} else {
+	  is($rc, undef, $test);
+	}
+      } else {
+	isa_ok($rc, 'Sys::Hwloc::Bitmap', $test);
+      }
+
+    };
+
+  SKIP: {
+
+      skip 'Sys::Hwloc::Obj->infos', 3 unless ($apiVersion >= 0x00010100);
 
       # $o->infos
       #   Should be HASH, not empty for HWLOC_OBJ_MACHINE

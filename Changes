@@ -1,10 +1,38 @@
-Revision history for Perl extension Hwloc.
+Revision history for Perl extension Sys::Hwloc.
+
+0.05  2010/12/21
+      - added Sys::Hwloc::Obj->sprintf() as additional alias for
+        hwloc_obj_sprintf() and Sys::Hwloc::Topology->sprintf_obj()
+
+      - added Sys::Hwloc::hwloc_compare_objects with aliases
+        Sys::Hwloc::Topology->compare_objects and
+        Sys::Hwloc::Obj->is_same_obj
+        to compare the raw C pointer values
+
+      - added constant HWLOC_XSAPI_VERSION
+        (returns 0 where HWLOC_API_VERSION returns undef)
+
+      - implemented Cpuset and Bitmap API with some basic helpers
+        and handy functions that are not part of the hwloc C API
+
+      - destructors $topology->destroy, $cpuset->free, $bitmap->free
+        set the unlerlying C pointer to NULL after freeing the
+        C struct. This helps to circumvent double-free and
+        SIGSEGV. We should implement a DESTROY some day. This
+        needs the perl objects to be proxies that store the
+        C pointer in some hidden property, instead of being
+        simple T_PTROBJ.
+
+      - added PODs for Sys::Hwloc::Topology,
+        Sys::Hwloc::Obj, Sys::Hwloc::Cpuset, Sys::Hwloc::Bitmap
+
+      - added the "Artistic License 2.0" to LICENSE
 
 0.04  2010/12/14
       - rewrote from scratch using typemapping
       - added OO-ish methods for hwloc_obj_t and hwloc_topology_t objects
       - support for HWLOC_API_VERSION (undef) .. 0x00010100
-      - submitted to CPAN
+      - named the module Sys::Hwloc and submitted to CPAN
 
 0.03  2010/12/07
       - additional constants for hwloc_get_obj_data retrieval

@@ -1,12 +1,24 @@
-# -----------------------------------------------------------------------------
-# Test helpers with topology on this machine
+################################################################################
 #
-# $Id: 06-helpers.t,v 1.6 2010/12/14 18:41:55 bzbkalli Exp $
-# -----------------------------------------------------------------------------
+#  Copyright 2010 Zuse Institute Berlin
+#
+#  This package and its accompanying libraries is free software; you can
+#  redistribute it and/or modify it under the terms of the GPL version 2.0,
+#  or the Artistic License 2.0. Refer to LICENSE for the full license text.
+#
+#  Please send comments to kallies@zib.de
+#
+################################################################################
+#
+# Test topology helpers with topology on this machine
+#
+# $Id: 06-helpers.t,v 1.9 2010/12/21 14:19:10 bzbkalli Exp $
+#
+################################################################################
 
 use Test::More 0.94;
 use strict;
-use Sys::Hwloc;
+use Sys::Hwloc 0.04;
 
 my $apiVersion = HWLOC_API_VERSION();
 my $proc_t     = $apiVersion ? HWLOC_OBJ_PU() : HWLOC_OBJ_PROC();
@@ -26,7 +38,7 @@ BAIL_OUT("Failed to initialize topology context via hwloc_topology_init()") unle
 $rc = hwloc_topology_load($t);
 BAIL_OUT("Failed to load topology context") if $rc;
 
-plan tests => 14;
+plan tests => 15;
 
 # --
 # Check hwloc_compare_types
@@ -137,6 +149,30 @@ subtest $test => sub {
     fail("\%{$test}");
   }
 
+};
+
+# --
+# Check hwloc_compare_objects
+# --
+
+$test = "hwloc_compare_objects()";
+SKIP: {
+
+  skip $test, 1 unless $root;
+
+  subtest $test => sub {
+
+    plan tests => 6;
+
+    is(hwloc_compare_objects($t,$root,$root), 1, "hwloc_compare_objects(root,root)");
+    is(hwloc_compare_objects($t,$root,undef), 0, "hwloc_compare_objects(root,undef)");
+    is(hwloc_compare_objects($t,$root,$root->first_child), 0, "hwloc_compare_objects(root,root->first_child)");
+
+    is($root->is_same_obj($root), 1, "root->is_same_obj(root)");
+    is($root->is_same_obj(undef), 0, "root->is_same_obj(undef)");
+    is($root->is_same_obj($root->first_child), 0, "root->is_same_obj(root->first_child)");
+
+  };
 };
 
 # --

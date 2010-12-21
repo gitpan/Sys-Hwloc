@@ -1,12 +1,25 @@
-# -----------------------------------------------------------------------------
-# Test if module can be loaded
+
+################################################################################
 #
-# $Id: 00-use.t,v 1.3 2010/12/14 18:41:54 bzbkalli Exp $
-# -----------------------------------------------------------------------------
+#  Copyright 2010 Zuse Institute Berlin
+#
+#  This package and its accompanying libraries is free software; you can
+#  redistribute it and/or modify it under the terms of the GPL version 2.0,
+#  or the Artistic License 2.0. Refer to LICENSE for the full license text.
+#
+#  Please send comments to kallies@zib.de
+#
+################################################################################
+#
+# Test if Hwloc module can be loaded
+#
+# $Id: 00-use.t,v 1.6 2010/12/21 14:19:09 bzbkalli Exp $
+#
+################################################################################
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 
-BEGIN { use_ok('Sys::Hwloc') };
+BEGIN { use_ok('Sys::Hwloc', 0.05) };
 use strict;
 
 require_ok('Sys::Hwloc') or
@@ -14,6 +27,9 @@ require_ok('Sys::Hwloc') or
 
 can_ok('Sys::Hwloc', 'HWLOC_API_VERSION') or
   BAIL_OUT("constant HWLOC_API_VERSION not there");
+
+can_ok('Sys::Hwloc', 'HWLOC_XSAPI_VERSION') or
+  BAIL_OUT("constant HWLOC_XSAPI_VERSION not there");
 
 can_ok('Sys::Hwloc', 'HWLOC_HAS_XML') or
   BAIL_OUT("constant HWLOC_HAS_XML not there");

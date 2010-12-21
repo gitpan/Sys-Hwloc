@@ -1,25 +1,16 @@
-/*
-#  Copyright 2010 Zuse Institute Berlin
-#
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation or under the same terms as perl itself.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#
-#  Please send comments to kallies@zib.de
-*/
-
-/* ------------------------------------------------------------------- */
-/* $Id: Hwloc.xs,v 1.16 2010/12/14 23:07:14 bzbkalli Exp $              */
-/* ------------------------------------------------------------------- */
+/* *******************************************************************
+ *
+ *  Copyright 2010 Zuse Institute Berlin
+ *
+ *  This package and its accompanying libraries is free software; you can
+ *  redistribute it and/or modify it under the terms of the GPL version 2.0,
+ *  or the Artistic License 2.0. Refer to LICENSE for the full license text.
+ *
+ *  Please send comments to kallies@zib.de
+ *
+ * *******************************************************************
+ * $Id: Hwloc.xs,v 1.30 2010/12/21 19:44:16 bzbkalli Exp $
+ * ******************************************************************* */
 
 #include "EXTERN.h"
 #include "perl.h"
@@ -29,7 +20,25 @@
 
 #include "hwloc.h"
 
+/*
+ * Replacement for non-existing HWLOC_API_VERSION
+ */
+
+#ifdef HWLOC_API_VERSION
+#  define HWLOC_XSAPI_VERSION HWLOC_API_VERSION
+#else
+#  define HWLOC_XSAPI_VERSION 0
+#endif
+
+/*
+ * Hwloc constants
+ */
+
 #include "const-c.inc"
+
+/*
+ * Macros to store a hash value of given type
+ */
 
 #define STOREiv(hv,key,v)  { void *x = hv_store(hv,key,strlen(key),newSViv((IV)v),0);       x = NULL; }
 #define STOREuv(hv,key,v)  { void *x = hv_store(hv,key,strlen(key),newSVuv((UV)v),0);       x = NULL; }
@@ -38,7 +47,16 @@
 #define STORErv(hv,key,v)  { void *x = hv_store(hv,key,strlen(key),newRV((SV *)v),0);       x = NULL; }
 #define STOREundef(hv,key) { void *x = hv_store(hv,key,strlen(key),&PL_sv_undef,0);         x = NULL; }
 
+/*
+ * Static buffer receiving hwloc_snprintf_* output strings
+ */
+
 static char sbuf[1024];
+
+/*
+ * Convert a hwloc_obj_t into an SV, see also typemap OUTPUT.
+ * Used in XSUBs with direct stack manipulation.
+ */
 
 static SV *hwlocObj2SV(hwloc_obj_t o) {
   SV *sv = NEWSV(0,0);
@@ -46,7 +64,15 @@ static SV *hwlocObj2SV(hwloc_obj_t o) {
   return sv;
 }
 
-static hwloc_obj_t SV2hwlocObj(SV *sv, const char *func, int argi) {
+/*
+ * Convert an SV into a hwloc_obj_t , see also typemap INPUT
+ * If SV is undef and undefIsOK, then NULL is returned.
+ * If SV is undef and not undefIsOK, then croak.
+ * If SV is not undef and is not a Sys::Hwloc::Obj, then croak.
+ * Used in XSUBs with variable argument lists.
+ */
+
+static hwloc_obj_t SV2hwlocObj(SV *sv, const char *func, int argi, int undefIsOK) {
   hwloc_obj_t o = NULL;
   if(SvOK(sv)) {
     if(sv_isobject(sv) && sv_derived_from(sv, "Sys::Hwloc::Obj")) {
@@ -54,16 +80,23 @@ static hwloc_obj_t SV2hwlocObj(SV *sv, const char *func, int argi) {
     } else {
       croak("%s -- arg %d is not a \"Sys::Hwloc::Obj\" object", func, argi);
     }
+  } else if(! undefIsOK) {
+    croak("%s -- arg %d is not a \"Sys::Hwloc::Obj\" object", func, argi);
   }
   return o;
 }
 
-#ifdef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION
+
+/*
+ * Convert a hwloc_topology_support struct into a HASH.
+ */
+
 static HV *hwlocTopologySupport2HV(const struct hwloc_topology_support *s) {
   HV *hv = NULL;
   HV *d  = NULL;
   HV *c  = NULL;
-#if HWLOC_API_VERSION > 0x00010000
+#if HWLOC_XSAPI_VERSION >= 0x00010100
   HV *m  = NULL;
 #endif
   if(s) {
@@ -84,7 +117,7 @@ static HV *hwlocTopologySupport2HV(const struct hwloc_topology_support *s) {
     STOREuv(c, "get_thread_cpubind",     s->cpubind->get_thread_cpubind);
     STORErv(hv, "cpubind", c);
 
-#if HWLOC_API_VERSION > 0x00010000
+#if HWLOC_XSAPI_VERSION >= 0x00010100
     m  = (HV *)sv_2mortal((SV *)newHV());
     STOREuv(m, "set_thisproc_membind",   s->membind->set_thisproc_membind);
     STOREuv(m, "get_thisproc_membind",   s->membind->get_thisproc_membind);
@@ -107,12 +140,20 @@ static HV *hwlocTopologySupport2HV(const struct hwloc_topology_support *s) {
   return hv;
 }
 
+/*
+ * Convert a hwloc_obj_memory_page_type_s struct into a HASH.
+ */
+
 static HV *hwlocObjMemoryPageType2HV(struct hwloc_obj_memory_page_type_s *s) {
   HV *hv = (HV *)sv_2mortal((SV *)newHV());
   STOREuv(hv, "size",  s->size);
   STOREuv(hv, "count", s->count);
   return hv;
 }
+
+/*
+ * Convert a hwloc_obj_memory_s struct into a HASH.
+ */
 
 static HV *hwlocObjMemory2HV(struct hwloc_obj_memory_s *s) {
   HV *hv = (HV *)sv_2mortal((SV *)newHV());
@@ -128,12 +169,17 @@ static HV *hwlocObjMemory2HV(struct hwloc_obj_memory_s *s) {
 }
 #endif
 
+/*
+ * Convert a hwloc_obj_attr union into a HASH.
+ * To figure out the needed union member, we need the object type.
+ */
+
 static HV *hwlocObjAttr2HV(union hwloc_obj_attr_u *s, hwloc_obj_type_t type) {
   HV *hv = (HV *)sv_2mortal((SV *)newHV());
   HV *a  = NULL;
   if(s) {
     switch(type) {
-#ifndef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION == 0
       case HWLOC_OBJ_MACHINE:
 	a = (HV *)sv_2mortal((SV *)newHV());
 	STORErv(hv, "machine", a);
@@ -152,7 +198,7 @@ static HV *hwlocObjAttr2HV(union hwloc_obj_attr_u *s, hwloc_obj_type_t type) {
         STOREuv(a, "huge_page_size_kB",  s->machine.huge_page_size_kB);
 	break;
 #else
-#if HWLOC_API_VERSION == 0x00010000
+#if HWLOC_XSAPI_VERSION == 0x00010000
       case HWLOC_OBJ_MACHINE:
 	a = (HV *)sv_2mortal((SV *)newHV());
 	STORErv(hv, "machine", a);
@@ -172,16 +218,16 @@ static HV *hwlocObjAttr2HV(union hwloc_obj_attr_u *s, hwloc_obj_type_t type) {
 	a = (HV *)sv_2mortal((SV *)newHV());
 	STORErv(hv, "cache", a);
 	STOREuv(a, "depth",                s->cache.depth);
-#ifndef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION == 0
 	STOREuv(a, "memory_kB",            s->cache.memory_kB);
 #else
 	STOREuv(a, "size",                 s->cache.size);
-#if HWLOC_API_VERSION > 0x00010000
+#if HWLOC_XSAPI_VERSION >= 0x00010100
 	STOREuv(a, "linesize",             s->cache.linesize);
 #endif
 #endif
         break;
-#ifndef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION == 0
       case HWLOC_OBJ_MISC:
 	a = (HV *)sv_2mortal((SV *)newHV());
 	STORErv(hv, "misc", a);
@@ -194,7 +240,7 @@ static HV *hwlocObjAttr2HV(union hwloc_obj_attr_u *s, hwloc_obj_type_t type) {
         STOREuv(a, "huge_page_free",        s->node.huge_page_free);
 	break;
 #endif
-#ifdef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION
       case HWLOC_OBJ_GROUP:
 	a = (HV *)sv_2mortal((SV *)newHV());
 	STORErv(hv, "group", a);
@@ -209,7 +255,12 @@ static HV *hwlocObjAttr2HV(union hwloc_obj_attr_u *s, hwloc_obj_type_t type) {
   return hv;
 }
 
-#if HWLOC_API_VERSION > 0x00010000
+#if HWLOC_XSAPI_VERSION >= 0x00010100
+
+/*
+ * Convert an array of hwloc_obj_info_s structs into a HASH.
+ */
+
 static HV *hwlocObjInfos2HV(struct hwloc_obj_info_s *s, unsigned n) {
   HV *hv = (HV *)sv_2mortal((SV *)newHV());
   int i;
@@ -223,6 +274,200 @@ static HV *hwlocObjInfos2HV(struct hwloc_obj_info_s *s, unsigned n) {
     }
   }
   return hv;
+}
+#endif
+
+/*
+ * Pretty-print bits set in a cpuset or bitmap.
+ * The result string conforms to Linux cpuset(7) list format.
+ * On success, the number of characters printed is returned (not including trailing '\0').
+ * On failure, -1 is returned.
+ */
+
+#if HWLOC_XSAPI_VERSION <= 0x00010000
+static int hwloc_cpuset_snprintf_list(char *buf, size_t buflen, hwloc_const_cpuset_t map) {
+  unsigned last_id = UINT_MAX;
+  unsigned id;
+  char     *p = buf, *pr, *p_last = NULL;
+  size_t   len, rlen;
+  int      rc, rcount = 0;
+
+  *buf = '\0';
+  hwloc_cpuset_foreach_begin(id, map) {
+    len  = strlen(buf);
+    rlen = buflen - len;
+    if(len) {
+      if(id - last_id == 1) {
+	switch(rcount) {
+	case 1:
+	  rc = snprintf(p, rlen, ",%u", id);
+	  break;
+	case 2:
+	  pr = strchr(p_last, ',');
+	  rc = snprintf(pr, rlen, "-%u", id);
+	  p = pr + strlen(pr);
+	  break;
+	default:
+	  pr = strchr(p_last, '-');
+	  rc = snprintf(pr, rlen, "-%u", id);
+	  p = pr + strlen(pr);
+	}
+	rcount++;
+      } else {
+	rc = snprintf(p, rlen, ",%u", id);
+	rcount = 1;
+      }
+    } else {
+      rc = snprintf(p, rlen, "%u", id);
+      rcount = 1;
+    }
+
+    if(rc < 0)
+      return -1;
+    if(rc >= rlen)
+      return -1;
+
+    last_id = id;
+    if(rcount < 3)
+      p_last = p;
+    p += strlen(p);
+  }
+  hwloc_cpuset_foreach_end();
+  return strlen(buf);
+}
+#else
+static int hwloc_bitmap_snprintf_list(char *buf, size_t buflen, hwloc_const_bitmap_t map) {
+  unsigned last_id = UINT_MAX;
+  unsigned id;
+  char     *p = buf, *pr, *p_last = NULL;
+  size_t   len, rlen;
+  int      rc, rcount = 0;
+
+  *buf = '\0';
+  hwloc_bitmap_foreach_begin(id, map) {
+    len  = strlen(buf);
+    rlen = buflen - len;
+    if(len) {
+      if(id - last_id == 1) {
+	switch(rcount) {
+	case 1:
+	  rc = snprintf(p, rlen, ",%u", id);
+	  break;
+	case 2:
+	  pr = strchr(p_last, ',');
+	  rc = snprintf(pr, rlen, "-%u", id);
+	  p = pr + strlen(pr);
+	  break;
+	default:
+	  pr = strchr(p_last, '-');
+	  rc = snprintf(pr, rlen, "-%u", id);
+	  p = pr + strlen(pr);
+	}
+	rcount++;
+      } else {
+	rc = snprintf(p, rlen, ",%u", id);
+	rcount = 1;
+      }
+    } else {
+      rc = snprintf(p, rlen, "%u", id);
+      rcount = 1;
+    }
+
+    if(rc < 0)
+      return -1;
+
+    if(rc >= rlen)
+      return -1;
+
+    last_id = id;
+    if(rcount < 3)
+      p_last = p;
+    p += strlen(p);
+  }
+  hwloc_bitmap_foreach_end();
+  return strlen(buf);
+}
+#endif
+
+/*
+ * Convert Linux cpuset(7) list format ASCII string to bitmap.
+ * Return 0 on success, -1 on error.
+ * The code is adapted from bitmap.c in recent Linux kernel.
+ */
+
+#if HWLOC_XSAPI_VERSION <= 0x00010000
+static int hwloc_cpuset_sscanf_list(hwloc_cpuset_t map, const char *s) {
+  unsigned a, b;
+
+  if(! s)
+    return -1;
+
+  hwloc_cpuset_zero(map);
+
+  do {
+
+    if(! isdigit(*s))
+      return -1;
+
+    b = a = strtoul(s, (char **)&s, 10);
+
+    if(*s == '-') {
+      s++;
+      if(! isdigit(*s))
+	return -1;
+      b = strtoul(s, (char **)&s, 10);
+    }
+
+    if(a > b)
+      return -1;
+
+    while(a <= b)
+      hwloc_cpuset_set(map, a++);
+
+    if(*s == ',')
+      s++;
+
+  } while(*s != '\0' && *s != '\n');
+
+  return 0;
+
+}
+#else
+static int hwloc_bitmap_sscanf_list(hwloc_bitmap_t map, const char *s) {
+  unsigned a, b;
+
+  if(! map)
+    return -1;
+
+  hwloc_bitmap_zero(map);
+
+  do {
+
+    if(! isdigit(*s))
+      return -1;
+
+    b = a = strtoul(s, (char **)&s, 10);
+
+    if(*s == '-') {
+      s++;
+      if(! isdigit(*s))
+	return -1;
+      b = strtoul(s, (char **)&s, 10);
+    }
+
+    if(a > b)
+      return -1;
+
+    while(a <= b)
+      hwloc_bitmap_set(map, a++);
+
+    if(*s == ',')
+      s++;
+
+  } while(*s != '\0' && *s != '\n');
+
+  return 0;
+
 }
 #endif
 
@@ -259,6 +504,7 @@ hwloc_topology_check(topo)
   ALIAS:
     Sys::Hwloc::Topology::check = 1
   PPCODE:
+    PERL_UNUSED_VAR(ix);
     hwloc_topology_check(topo);
 
 
@@ -269,7 +515,11 @@ hwloc_topology_destroy(topo)
   ALIAS:
     Sys::Hwloc::Topology::destroy = 1
   PPCODE:
-    hwloc_topology_destroy(topo);
+    PERL_UNUSED_VAR(ix);
+    if(topo) {
+      hwloc_topology_destroy(topo);
+      sv_setref_pv(ST(0), "Sys::Hwloc::Topology", (void *)NULL);
+    }
 
 
 hwloc_topology_t
@@ -293,6 +543,7 @@ hwloc_topology_load(topo)
   ALIAS:
     Sys::Hwloc::Topology::load = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_topology_load(topo);
   OUTPUT:
     RETVAL
@@ -308,22 +559,16 @@ hwloc_topology_ignore_type(topo,type)
   hwloc_obj_type_t type
   PROTOTYPE: $$
   ALIAS:
-    Sys::Hwloc::Topology::ignore_type = 1
+    Sys::Hwloc::Topology::ignore_type                     = 1
+    Sys::Hwloc::hwloc_topology_ignore_type_keep_structure = 10
+    Sys::Hwloc::Topology::ignore_type_keep_structure      = 11
   CODE:
-    RETVAL = hwloc_topology_ignore_type(topo,type);
-  OUTPUT:
-    RETVAL
-
-
-int
-hwloc_topology_ignore_type_keep_structure(topo,type)
-  hwloc_topology_t topo
-  hwloc_obj_type_t type
-  PROTOTYPE: $$
-  ALIAS:
-    Sys::Hwloc::Topology::ignore_type_keep_structure = 1
-  CODE:
-    RETVAL = hwloc_topology_ignore_type_keep_structure(topo,type);
+    if(ix < 10)
+      RETVAL = hwloc_topology_ignore_type(topo,type);
+    else if(ix < 20)
+      RETVAL = hwloc_topology_ignore_type_keep_structure(topo,type);
+    else
+      croak("Should not come here in Sys::Hwloc::hwloc_topology_ignore_type, alias = %d", (int)ix);
   OUTPUT:
     RETVAL
 
@@ -335,6 +580,7 @@ hwloc_topology_ignore_all_keep_structure(topo)
   ALIAS:
     Sys::Hwloc::Topology::ignore_all_keep_structure = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_topology_ignore_all_keep_structure(topo);
   OUTPUT:
     RETVAL
@@ -348,6 +594,7 @@ hwloc_topology_set_flags(topo,flags)
   ALIAS:
     Sys::Hwloc::Topology::set_flags = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_topology_set_flags(topo,flags);
   OUTPUT:
     RETVAL
@@ -361,12 +608,13 @@ hwloc_topology_set_fsroot(topo,path)
   ALIAS:
     Sys::Hwloc::Topology::set_fsroot = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_topology_set_fsroot(topo,path);
   OUTPUT:
     RETVAL
 
 
-#ifdef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION
 int
 hwloc_topology_set_pid(topo,pid)
   hwloc_topology_t topo
@@ -375,6 +623,7 @@ hwloc_topology_set_pid(topo,pid)
   ALIAS:
     Sys::Hwloc::Topology::set_pid = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_topology_set_pid(topo,pid);
   OUTPUT:
     RETVAL
@@ -390,6 +639,7 @@ hwloc_topology_set_synthetic(topo,string)
   ALIAS:
     Sys::Hwloc::Topology::set_synthetic = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_topology_set_synthetic(topo,string);
   OUTPUT:
     RETVAL
@@ -403,12 +653,13 @@ hwloc_topology_set_xml(topo,path)
   ALIAS:
     Sys::Hwloc::Topology::set_xml = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_topology_set_xml(topo,path);
   OUTPUT:
     RETVAL
 
 
-#ifdef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION
 SV *
 hwloc_topology_get_support(topo)
   hwloc_topology_t topo
@@ -418,6 +669,7 @@ hwloc_topology_get_support(topo)
   PREINIT:
     const struct hwloc_topology_support *st = NULL;
   CODE:
+    PERL_UNUSED_VAR(ix);
     if((st = hwloc_topology_get_support(topo)))
       RETVAL = newRV((SV *)hwlocTopologySupport2HV(st));
     else
@@ -443,6 +695,7 @@ hwloc_topology_export_xml(topo,path)
   ALIAS:
     Sys::Hwloc::Topology::export_xml = 1
   PPCODE:
+    PERL_UNUSED_VAR(ix);
     hwloc_topology_export_xml(topo,path);
 
 #endif
@@ -460,6 +713,7 @@ hwloc_topology_get_depth(topo)
     Sys::Hwloc::Topology::get_depth = 1
     Sys::Hwloc::Topology::depth     = 2
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_topology_get_depth(topo);
   OUTPUT:
     RETVAL
@@ -474,6 +728,7 @@ hwloc_get_type_depth(topo,type)
     Sys::Hwloc::Topology::get_type_depth = 1
     Sys::Hwloc::Topology::type_depth     = 2
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_type_depth(topo,type);
   OUTPUT:
     RETVAL
@@ -488,7 +743,8 @@ hwloc_get_depth_type(topo,depth)
     Sys::Hwloc::Topology::get_depth_type = 1
     Sys::Hwloc::Topology::depth_type     = 2
   CODE:
-  RETVAL = hwloc_get_depth_type(topo,depth);
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_depth_type(topo,depth);
   OUTPUT:
     RETVAL
 
@@ -502,7 +758,8 @@ hwloc_get_nbobjs_by_depth(topo,depth)
     Sys::Hwloc::Topology::get_nbobjs_by_depth = 1
     Sys::Hwloc::Topology::nbobjs_by_depth     = 2
   CODE:
-  RETVAL = hwloc_get_nbobjs_by_depth(topo,depth);
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_nbobjs_by_depth(topo,depth);
   OUTPUT:
     RETVAL
 
@@ -516,7 +773,8 @@ hwloc_get_nbobjs_by_type(topo,type)
     Sys::Hwloc::Topology::get_nbobjs_by_type = 1
     Sys::Hwloc::Topology::nbobjs_by_type     = 2
   CODE:
-  RETVAL = hwloc_get_nbobjs_by_type(topo,type);
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_nbobjs_by_type(topo,type);
   OUTPUT:
     RETVAL
 
@@ -528,6 +786,7 @@ hwloc_topology_is_thissystem(topo)
   ALIAS:
     Sys::Hwloc::Topology::is_thissystem = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_topology_is_thissystem(topo);
   OUTPUT:
     RETVAL
@@ -547,6 +806,7 @@ hwloc_get_obj_by_depth(topo,depth,idx)
     Sys::Hwloc::Topology::get_obj_by_depth = 1
     Sys::Hwloc::Topology::obj_by_depth     = 2
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_obj_by_depth(topo,depth,idx);
   OUTPUT:
     RETVAL
@@ -562,6 +822,7 @@ hwloc_get_obj_by_type(topo,type,idx)
     Sys::Hwloc::Topology::get_obj_by_type = 1
     Sys::Hwloc::Topology::obj_by_type     = 2
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_obj_by_type(topo,type,idx);
   OUTPUT:
     RETVAL
@@ -596,8 +857,8 @@ hwloc_obj_type_of_string(string)
     RETVAL
 
 
-#ifdef HWLOC_API_VERSION
-char *
+#if HWLOC_XSAPI_VERSION
+SV *
 hwloc_obj_type_sprintf(obj, ...)
   hwloc_obj_t obj
   PROTOTYPE: $;$
@@ -607,20 +868,21 @@ hwloc_obj_type_sprintf(obj, ...)
     int rc;
     int verbose = 0;
   CODE:
+    PERL_UNUSED_VAR(ix);
     if((items > 1) && (SvIOK(ST(1))))
       verbose = SvIV(ST(1));
     if((rc = hwloc_obj_type_snprintf(sbuf, sizeof(sbuf), obj, verbose)) == -1)
       XSRETURN_UNDEF;
     else
-      RETVAL = sbuf;
+      RETVAL = newSVpvn(sbuf,(STRLEN)rc);
   OUTPUT:
     RETVAL
 
 #endif
 
 
-#ifdef HWLOC_API_VERSION
-char *
+#if HWLOC_XSAPI_VERSION
+SV *
 hwloc_obj_attr_sprintf(obj, ...)
   hwloc_obj_t obj
   PROTOTYPE: $;$$
@@ -631,6 +893,7 @@ hwloc_obj_attr_sprintf(obj, ...)
     char *separator = "";
     int   verbose   = 0;
   CODE:
+    PERL_UNUSED_VAR(ix);
     if((items > 1) && (SvOK(ST(1))))
       separator = SvPV_nolen(ST(1));
     if((items > 2) && (SvIOK(ST(2))))
@@ -638,65 +901,86 @@ hwloc_obj_attr_sprintf(obj, ...)
     if((rc = hwloc_obj_attr_snprintf(sbuf, sizeof(sbuf), obj, separator, verbose)) == -1)
       XSRETURN_UNDEF;
     else
-      RETVAL = sbuf;
+      RETVAL = newSVpvn(sbuf,(STRLEN)rc);
   OUTPUT:
     RETVAL
 
 #endif
 
 
-char *
-hwloc_obj_sprintf(topo,obj, ...)
-  hwloc_topology_t topo
-  hwloc_obj_t      obj
-  PROTOTYPE: $$;$$
+SV *
+hwloc_obj_sprintf(...)
+  PROTOTYPE: DISABLE
   ALIAS:
     Sys::Hwloc::Topology::sprintf_obj = 1
-  PREINIT:
-    int   rc;
-    char *prefix  = NULL;
-    int   verbose = 0;
+    Sys::Hwloc::Obj::sprintf          = 2
   CODE:
-    if((items > 2) && (SvOK(ST(2))))
-      prefix  = SvPV_nolen(ST(2));
-    if((items > 3) && (SvIOK(ST(3))))
-      verbose = SvIV(ST(3));
-    if((rc = hwloc_obj_snprintf(sbuf, sizeof(sbuf), topo, obj, prefix, verbose)) == -1)
+    hwloc_obj_t   obj     = NULL;
+    char         *prefix  = NULL;
+    int           verbose = 0;
+    int           rc;
+    if(ix == 0) {
+      if(items < 2)
+	croak("Not enough arguments for Sys::Hwloc::hwloc_obj_sprintf");
+      obj = SV2hwlocObj(ST(1), "Sys::Hwloc::hwloc_obj_sprintf()", 1, 0);
+      if((items > 2) && (SvOK(ST(2))))
+        prefix  = SvPV_nolen(ST(2));
+      if((items > 3) && (SvIOK(ST(3))))
+        verbose = SvIV(ST(3));
+    } else if(ix == 1) {
+      if(items < 2)
+	croak("Not enough arguments for Sys::Hwloc::Topology->sprintf_obj");
+      obj = SV2hwlocObj(ST(1), "Sys::Hwloc::Topology->sprintf_obj()", 1, 0);
+      if((items > 2) && (SvOK(ST(2))))
+        prefix  = SvPV_nolen(ST(2));
+      if((items > 3) && (SvIOK(ST(3))))
+        verbose = SvIV(ST(3));
+    } else if(ix == 2) {
+      if(items < 1)
+        croak("Not enough arguments for Sys::Hwloc::Obj->sprintf");
+      obj = SV2hwlocObj(ST(0), "Sys::Hwloc::Obj->sprintf()", 0, 0);
+      if((items > 1) && (SvOK(ST(1))))
+        prefix  = SvPV_nolen(ST(1));
+      if((items > 2) && (SvIOK(ST(2))))
+        verbose = SvIV(ST(2));
+    } else {
+      croak("Should not come here in Sys::Hwloc::hwloc_obj_sprintf");
+    }
+    if((rc = hwloc_obj_snprintf(sbuf, sizeof(sbuf), NULL, obj, prefix, verbose)) == -1)
       XSRETURN_UNDEF;
     else
-      RETVAL = sbuf;
+      RETVAL = newSVpvn(sbuf,(STRLEN)rc);
   OUTPUT:
     RETVAL
 
 
-char *
+SV *
 hwloc_obj_cpuset_sprintf(...)
   PROTOTYPE: DISABLE
   ALIAS:
     Sys::Hwloc::Obj::sprintf_cpuset = 1
-  CODE:
+  PREINIT:
     hwloc_obj_t *objs = NULL;
-    int          i;
-    int          rc;
+    int i;
+    int rc;
+  CODE:
     if(items > 0) {
       if((ix == 1) && (items > 1))
 	croak("Usage: sprintf_cpuset()");
       if((objs = (hwloc_obj_t *)malloc(items * sizeof(hwloc_obj_t *))) == NULL)
 	croak("Failed to allocate memory");
-      for(i = 0; i < items; i++) {
-	if((objs[i] = SV2hwlocObj(ST(i), "Sys::Hwloc::hwloc_obj_cpuset_sprintf()", i)) == NULL)
-	  croak("Sys::Hwloc::hwloc_obj_cpuset_sprintf() -- arg %d is not a \"Sys::Hwloc::Obj\" object", i);
-      }
+      for(i = 0; i < items; i++)
+	objs[i] = SV2hwlocObj(ST(i), "Sys::Hwloc::hwloc_obj_cpuset_sprintf()", i, 0);
     } else {
       if(ix)
-	croak("Not enough arguments for Sys::Hwloc::Obj::sprintf_cpuset");
+	croak("Not enough arguments for Sys::Hwloc::Obj->sprintf_cpuset");
     }
     if((rc = hwloc_obj_cpuset_snprintf(sbuf, sizeof(sbuf), items, objs)) == -1) {
       if(objs)
         free(objs);
       XSRETURN_UNDEF;
     } else {
-      RETVAL = sbuf;
+      RETVAL = newSVpvn(sbuf,(STRLEN)rc);
       if(objs)
 	free(objs);
     }
@@ -704,8 +988,8 @@ hwloc_obj_cpuset_sprintf(...)
     RETVAL
 
 
-#if HWLOC_API_VERSION > 0x00010000
-char *
+#if HWLOC_XSAPI_VERSION >= 0x00010100
+SV *
 hwloc_obj_get_info_by_name(obj,name)
   hwloc_obj_t  obj
   const char  *name
@@ -714,7 +998,8 @@ hwloc_obj_get_info_by_name(obj,name)
     Sys::Hwloc::Obj::get_info_by_name = 1
     Sys::Hwloc::Obj::info_by_name     = 2
   CODE:
-    RETVAL = hwloc_obj_get_info_by_name(obj,name);
+    PERL_UNUSED_VAR(ix);
+    RETVAL = newSVpv(hwloc_obj_get_info_by_name(obj,name),(STRLEN)0);
   OUTPUT:
     RETVAL
 
@@ -741,22 +1026,16 @@ hwloc_get_type_or_below_depth(topo,type)
   ALIAS:
     Sys::Hwloc::Topology::get_type_or_below_depth = 1
     Sys::Hwloc::Topology::type_or_below_depth     = 2
+    Sys::Hwloc::hwloc_get_type_or_above_depth     = 10
+    Sys::Hwloc::Topology::get_type_or_above_depth = 11
+    Sys::Hwloc::Topology::type_or_above_depth     = 12
   CODE:
-    RETVAL = hwloc_get_type_or_below_depth(topo,type);
-  OUTPUT:
-    RETVAL
-
-
-int
-hwloc_get_type_or_above_depth(topo,type)
-  hwloc_topology_t topo
-  hwloc_obj_type_t type
-  PROTOTYPE: $$
-  ALIAS:
-    Sys::Hwloc::Topology::get_type_or_above_depth = 1
-    Sys::Hwloc::Topology::type_or_above_depth     = 2
-  CODE:
-    RETVAL = hwloc_get_type_or_above_depth(topo,type);
+    if(ix < 10)
+      RETVAL = hwloc_get_type_or_below_depth(topo,type);
+    else if(ix < 20)
+      RETVAL = hwloc_get_type_or_above_depth(topo,type);
+    else
+      croak("Should not come here in Sys::Hwloc::hwloc_get_type_or_below_depth, alias = %d", (int)ix);
   OUTPUT:
     RETVAL
 
@@ -766,7 +1045,7 @@ hwloc_get_type_or_above_depth(topo,type)
  # -------------------------------------------------------------------
 
 
-#ifndef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION == 0
 hwloc_obj_t
 hwloc_get_system_obj(topo)
   hwloc_topology_t topo
@@ -775,6 +1054,7 @@ hwloc_get_system_obj(topo)
     Sys::Hwloc::Topology::system_obj = 1
     Sys::Hwloc::Topology::system     = 2
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_system_obj(topo);
   OUTPUT:
     RETVAL
@@ -788,6 +1068,7 @@ hwloc_get_root_obj(topo)
     Sys::Hwloc::Topology::root_obj   = 1
     Sys::Hwloc::Topology::root       = 2
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_root_obj(topo);
   OUTPUT:
     RETVAL
@@ -795,7 +1076,7 @@ hwloc_get_root_obj(topo)
 #endif
 
 
-#ifdef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION
 hwloc_obj_t
 hwloc_get_ancestor_obj_by_depth(obj,depth)
   hwloc_obj_t obj
@@ -804,14 +1085,12 @@ hwloc_get_ancestor_obj_by_depth(obj,depth)
   ALIAS:
     Sys::Hwloc::Obj::ancestor_by_depth = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_ancestor_obj_by_depth(NULL,depth,obj);
   OUTPUT:
     RETVAL
 
-#endif
 
-
-#ifdef HWLOC_API_VERSION
 hwloc_obj_t
 hwloc_get_ancestor_obj_by_type(obj,type)
   hwloc_obj_t      obj
@@ -820,6 +1099,7 @@ hwloc_get_ancestor_obj_by_type(obj,type)
   ALIAS:
     Sys::Hwloc::Obj::ancestor_by_type = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_ancestor_obj_by_type(NULL,type,obj);
   OUTPUT:
     RETVAL
@@ -839,7 +1119,8 @@ hwloc_get_next_obj_by_depth(topo,depth,prev)
   PREINIT:
     hwloc_obj_t    o = NULL;
   CODE:
-    o      = SV2hwlocObj(prev, "Sys::Hwloc::hwloc_get_next_obj_by_depth()", 3);
+    PERL_UNUSED_VAR(ix);
+    o      = SV2hwlocObj(prev, "Sys::Hwloc::hwloc_get_next_obj_by_depth()", 3, 1);
     RETVAL = hwloc_get_next_obj_by_depth(topo,depth,o);
   OUTPUT:
     RETVAL
@@ -857,13 +1138,14 @@ hwloc_get_next_obj_by_type(topo,type,prev)
   PREINIT:
     hwloc_obj_t    o = NULL;
   CODE:
-    o      = SV2hwlocObj(prev, "Sys::Hwloc::hwloc_get_next_obj_by_type()", 3);
+    PERL_UNUSED_VAR(ix);
+    o      = SV2hwlocObj(prev, "Sys::Hwloc::hwloc_get_next_obj_by_type()", 3, 1);
     RETVAL = hwloc_get_next_obj_by_type(topo,type,o);
   OUTPUT:
     RETVAL
 
 
-#ifdef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION
 hwloc_obj_t
 hwloc_get_pu_obj_by_os_index(topo,idx)
   hwloc_topology_t topo
@@ -873,6 +1155,7 @@ hwloc_get_pu_obj_by_os_index(topo,idx)
     Sys::Hwloc::Topology::get_pu_obj_by_os_index = 1
     Sys::Hwloc::Topology::pu_obj_by_os_index     = 2
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_pu_obj_by_os_index(topo,idx);
   OUTPUT:
     RETVAL
@@ -891,7 +1174,8 @@ hwloc_get_next_child(obj,prev)
   PREINIT:
     hwloc_obj_t o = NULL;
   CODE:
-    o      = SV2hwlocObj(prev, "Sys::Hwloc::hwloc_get_next_child()", 2);
+    PERL_UNUSED_VAR(ix);
+    o      = SV2hwlocObj(prev, "Sys::Hwloc::hwloc_get_next_child()", 2, 1);
     RETVAL = hwloc_get_next_child(NULL,obj,o);
   OUTPUT:
     RETVAL
@@ -907,6 +1191,7 @@ hwloc_get_common_ancestor_obj(topo,obj1,obj2)
     Sys::Hwloc::Topology::get_common_ancestor_obj = 1
     Sys::Hwloc::Topology::common_ancestor_obj     = 2
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_common_ancestor_obj(NULL,obj1,obj2);
   OUTPUT:
     RETVAL
@@ -921,10 +1206,40 @@ hwloc_obj_is_in_subtree(topo,obj1,obj2)
   ALIAS:
     Sys::Hwloc::Topology::obj_is_in_subtree = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_obj_is_in_subtree(NULL,obj1,obj2);
   OUTPUT:
     RETVAL
 
+
+int
+hwloc_compare_objects(topo,obj1,obj2)
+  hwloc_topology_t  topo
+  SV               *obj1
+  SV               *obj2
+  PROTOTYPE: $$$
+  ALIAS:
+    Sys::Hwloc::Topology::compare_objects = 1
+  PREINIT:
+    hwloc_obj_t o1 = NULL;
+    hwloc_obj_t o2 = NULL;
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    o1 = SV2hwlocObj(obj1, "Sys::Hwloc::hwloc_compare_objects", 1, 1);
+    o2 = SV2hwlocObj(obj2, "Sys::Hwloc::hwloc_compare_objects", 2, 1);
+    RETVAL = (o1 == o2) ? 1 : 0;
+  OUTPUT:
+    RETVAL
+
+
+#if HWLOC_XSAPI_VERSION <= 0x00010000
+INCLUDE: hwloc_cpuset.xsh
+
+#else
+INCLUDE: hwloc_bitmap.xsh
+
+#endif
+    
 
  # ===================================================================
  # PACKAGE Sys::Hwloc::Topology, OO interface of hwloc_topology_t
@@ -943,7 +1258,8 @@ init(void)
     new = 1
   PREINIT:
     hwloc_topology_t t = NULL;
-  CODE:  
+  CODE:
+    PERL_UNUSED_VAR(ix);
     if(! hwloc_topology_init(&t))
       RETVAL = t;
     else
@@ -954,7 +1270,7 @@ init(void)
 
 
  # ===================================================================
- # PACKAGE Sys::Hwloc::Obj
+ # PACKAGE Sys::Hwloc::Obj, OO interface of hwloc_obj_t
  # ===================================================================
 
 MODULE = Sys::Hwloc                  PACKAGE = Sys::Hwloc::Obj
@@ -979,20 +1295,20 @@ os_index(o)
     RETVAL
 
 
-char *
+SV *
 name(o)
   hwloc_obj_t o
   PROTOTYPE: $
   CODE:
     if(o->name)
-      RETVAL = o->name;
+      RETVAL = newSVpv(o->name,0);
     else
       XSRETURN_UNDEF;
   OUTPUT:
     RETVAL
 
 
-#ifdef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION
 SV *
 memory(o)
   hwloc_obj_t o
@@ -1070,7 +1386,7 @@ prev_cousin(o)
     RETVAL
 
 
-#ifndef HWLOC_API_VERSION
+#if HWLOC_XSAPI_VERSION == 0
 hwloc_obj_t
 father(o)
   hwloc_obj_t o
@@ -1166,7 +1482,110 @@ last_child(o)
     RETVAL
 
 
-#if HWLOC_API_VERSION > 0x00010000
+#if HWLOC_XSAPI_VERSION < 0x00010100
+hwloc_cpuset_t
+cpuset(o)
+  hwloc_obj_t o
+  PROTOTYPE: $
+  CODE:
+    RETVAL = o->cpuset;
+  OUTPUT:
+    RETVAL
+
+#if HWLOC_XSAPI_VERSION
+hwloc_cpuset_t
+complete_cpuset(o)
+  hwloc_obj_t o
+  PROTOTYPE: $
+  ALIAS:
+    Sys::Hwloc::Obj::online_cpuset   = 1
+    Sys::Hwloc::Obj::allowed_cpuset  = 2
+  CODE:
+    if(ix == 0)
+      RETVAL = o->complete_cpuset;
+    else if(ix == 1)
+      RETVAL = o->online_cpuset;
+    else if(ix == 2)
+      RETVAL = o->allowed_cpuset;
+    else
+      croak("Should not come here in Sys::Hwloc::Obj->complete_cpuset, alias = %d", (int)ix);
+  OUTPUT:
+    RETVAL
+
+#endif
+
+#else
+hwloc_bitmap_t
+cpuset(o)
+  hwloc_obj_t o
+  PROTOTYPE: $
+  ALIAS:
+    Sys::Hwloc::Obj::complete_cpuset = 1
+    Sys::Hwloc::Obj::online_cpuset   = 2
+    Sys::Hwloc::Obj::allowed_cpuset  = 3
+  CODE:
+    if(ix == 0)
+      RETVAL = o->cpuset;
+    else if(ix == 1)
+      RETVAL = o->complete_cpuset;
+    else if(ix == 2)
+      RETVAL = o->online_cpuset;
+    else if(ix == 3)
+      RETVAL = o->allowed_cpuset;
+    else
+      croak("Should not come here in Sys::Hwloc::Obj->cpuset, alias = %d", (int)ix);
+  OUTPUT:
+    RETVAL
+
+#endif
+
+
+#if HWLOC_XSAPI_VERSION
+#if HWLOC_XSAPI_VERSION < 0x00010100
+hwloc_cpuset_t
+nodeset(o)
+  hwloc_obj_t o
+  PROTOTYPE: $
+  ALIAS:
+    Sys::Hwloc::Obj::complete_nodeset = 1
+    Sys::Hwloc::Obj::allowed_nodeset  = 3
+  CODE:
+    if(ix == 0)
+      RETVAL = o->nodeset;
+    else if(ix == 1)
+      RETVAL = o->complete_nodeset;
+    else if(ix == 3)
+      RETVAL = o->allowed_nodeset;
+    else
+      croak("Should not come here in Sys::Hwloc::Obj->nodeset, alias = %d", (int)ix);
+  OUTPUT:
+    RETVAL
+
+#else
+hwloc_bitmap_t
+nodeset(o)
+  hwloc_obj_t o
+  PROTOTYPE: $
+  ALIAS:
+    Sys::Hwloc::Obj::complete_nodeset = 1
+    Sys::Hwloc::Obj::allowed_nodeset  = 3
+  CODE:
+    if(ix == 0)
+      RETVAL = o->nodeset;
+    else if(ix == 1)
+      RETVAL = o->complete_nodeset;
+    else if(ix == 3)
+      RETVAL = o->allowed_nodeset;
+    else
+      croak("Should not come here in Sys::Hwloc::Obj->nodeset, alias = %d", (int)ix);
+  OUTPUT:
+    RETVAL
+
+#endif
+#endif
+
+
+#if HWLOC_XSAPI_VERSION >= 0x00010100
 SV *
 infos(o)
   hwloc_obj_t o
@@ -1192,6 +1611,7 @@ get_common_ancestor(o1,o2)
   ALIAS:
     common_ancestor = 1
   CODE:
+    PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_common_ancestor_obj(NULL,o1,o2);
   OUTPUT:
     RETVAL
@@ -1206,4 +1626,209 @@ is_in_subtree(o1,o2)
     RETVAL = hwloc_obj_is_in_subtree(NULL,o1,o2);
   OUTPUT:
     RETVAL
+
+
+int
+is_same_obj(o1,o2)
+  hwloc_obj_t   o1
+  SV           *o2
+  PROTOTYPE: $$
+  PREINIT:
+    hwloc_obj_t o = NULL;
+  CODE:
+    o = SV2hwlocObj(o2, "Sys::Hwloc::Obj->is_same_obj()", 1, 1);
+    RETVAL = (o1 == o) ? 1 : 0;
+  OUTPUT:
+    RETVAL
+
+
+#if HWLOC_XSAPI_VERSION <= 0x00010000
+
+ # ===================================================================
+ # PACKAGE Sys::Hwloc::Cpuset, OO interface of hwloc_cpuset_t
+ # ===================================================================
+
+MODULE = Sys::Hwloc                  PACKAGE = Sys::Hwloc::Cpuset
+
+hwloc_cpuset_t
+alloc(void)
+  PROTOTYPE:
+  ALIAS:
+    new = 1
+  PREINIT:
+    hwloc_cpuset_t s = NULL;
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    if((s = hwloc_cpuset_alloc()) == NULL)
+      XSRETURN_UNDEF;
+    else
+      RETVAL = s;
+  OUTPUT:
+      RETVAL
+
+
+void
+copy(set,dst)
+  hwloc_cpuset_t set
+  hwloc_cpuset_t dst
+  PROTOTYPE: $$
+  PPCODE:
+    hwloc_cpuset_copy(dst,set);
+
+
+#if HWLOC_XSAPI_VERSION
+void
+and(set,seta)
+  hwloc_cpuset_t set
+  hwloc_cpuset_t seta
+  PROTOTYPE: $$
+  ALIAS:
+    Sys::Hwloc::Cpuset::andnot = 1
+    Sys::Hwloc::Cpuset::or     = 2
+    Sys::Hwloc::Cpuset::xor    = 3
+  PREINIT:
+    hwloc_cpuset_t res = NULL;
+  PPCODE:
+    if((res = hwloc_cpuset_alloc()) == NULL)
+      croak("Failed to create temporary cpuset in Sys::Hwloc::Cpuset->and alias %d", (int)ix);
+    if(ix == 0)
+      hwloc_cpuset_and(res,set,seta);
+    else if(ix == 1)
+      hwloc_cpuset_andnot(res,set,seta);
+    else if(ix == 2)
+      hwloc_cpuset_or(res,set,seta);
+    else if(ix == 3)
+      hwloc_cpuset_xor(res,set,seta);
+    else
+      croak("Should not come here in Sys::Hwloc::Cpuset->and, alias = %d", (int)ix);
+    hwloc_cpuset_free(set);
+    sv_setref_pv(ST(0), "Sys::Hwloc::Cpuset", (void *)res);
+
+
+void
+not(set)
+  hwloc_cpuset_t set
+  PROTOTYPE: $
+  PREINIT:
+    hwloc_cpuset_t res = NULL;
+  PPCODE:
+    if((res = hwloc_cpuset_alloc()) == NULL)
+      croak("Failed to create temporary cpuset in Sys::Hwloc::Cpuset->not");
+    hwloc_cpuset_not(res,set);
+    hwloc_cpuset_free(set);
+    sv_setref_pv(ST(0), "Sys::Hwloc::Cpuset", (void *)res);
+
+#else
+void
+and(set,seta)
+  hwloc_cpuset_t set
+  hwloc_cpuset_t seta
+  PROTOTYPE: $$
+  ALIAS:
+    Sys::Hwloc::Cpuset::or     = 2
+    Sys::Hwloc::Cpuset::xor    = 3
+  PPCODE:
+    if(ix == 0)
+      hwloc_cpuset_andset(set,seta);
+    else if(ix == 2)
+      hwloc_cpuset_orset(set,seta);
+    else if(ix == 3)
+      hwloc_cpuset_xorset(set,seta);
+    else
+      croak("Should not come here in Sys::Hwloc::Cpuset->and, alias = %d", (int)ix);
+
+#endif
+#endif
+
+
+#if HWLOC_XSAPI_VERSION >= 0x00010100
+
+ # ===================================================================
+ # PACKAGE Sys::Hwloc::Bitmap, OO interface of hwloc_bitmap_t
+ # ===================================================================
+
+MODULE = Sys::Hwloc                  PACKAGE = Sys::Hwloc::Bitmap
+
+hwloc_bitmap_t
+alloc(void)
+  PROTOTYPE:
+  ALIAS:
+    new = 1
+  PREINIT:
+    hwloc_bitmap_t s = NULL;
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    if((s = hwloc_bitmap_alloc()) == NULL)
+      XSRETURN_UNDEF;
+    else
+      RETVAL = s;
+  OUTPUT:
+      RETVAL
+
+
+hwloc_bitmap_t
+alloc_full(void)
+  PROTOTYPE:
+  PREINIT:
+    hwloc_bitmap_t s = NULL;
+  CODE:
+    if((s = hwloc_bitmap_alloc_full()) == NULL)
+      XSRETURN_UNDEF;
+    else
+      RETVAL = s;
+  OUTPUT:
+      RETVAL
+
+
+void
+copy(map,dst)
+  hwloc_bitmap_t map
+  hwloc_bitmap_t dst
+  PROTOTYPE: $$
+  PPCODE:
+    hwloc_bitmap_copy(dst,map);
+
+
+void
+and(map,mapa)
+  hwloc_bitmap_t map
+  hwloc_bitmap_t mapa
+  PROTOTYPE: $$
+  ALIAS:
+    Sys::Hwloc::Bitmap::andnot = 1
+    Sys::Hwloc::Bitmap::or     = 2
+    Sys::Hwloc::Bitmap::xor    = 3
+  PREINIT:
+    hwloc_bitmap_t res = NULL;
+  PPCODE:
+    if((res = hwloc_bitmap_alloc()) == NULL)
+      croak("Failed to create temporary bitmap in Sys::Hwloc::Bitmap->and alias %d", (int)ix);
+    if(ix == 0)
+      hwloc_bitmap_and(res,map,mapa);
+    else if(ix == 1)
+      hwloc_bitmap_andnot(res,map,mapa);
+    else if(ix == 2)
+      hwloc_bitmap_or(res,map,mapa);
+    else if(ix == 3)
+      hwloc_bitmap_xor(res,map,mapa);
+    else
+      croak("Should not come here in Sys::Hwloc::Bitmap->and, alias = %d", (int)ix);
+    hwloc_bitmap_free(map);
+    sv_setref_pv(ST(0), "Sys::Hwloc::Bitmap", (void *)res);
+
+
+void
+not(map)
+  hwloc_bitmap_t map
+  PROTOTYPE: $
+  PREINIT:
+    hwloc_bitmap_t res = NULL;
+  PPCODE:
+    if((res = hwloc_bitmap_alloc()) == NULL)
+      croak("Failed to create temporary bitmap in Sys::Hwloc::Bitmap->not");
+    hwloc_bitmap_not(res,map);
+    hwloc_bitmap_free(map);
+    sv_setref_pv(ST(0), "Sys::Hwloc::Bitmap", (void *)res);
+
+#endif
 

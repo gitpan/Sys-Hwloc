@@ -6,6 +6,7 @@ See http://www.open-mpi.org/projects/hwloc/ for details.
 
 
 DEPENDENCIES
+------------
 
 This module requires hwloc >= 0.9
 
@@ -19,6 +20,7 @@ The Windows OS is currently not supported.
 
 
 INSTALLATION
+------------
 
 To install this module, type the following:
 
@@ -33,35 +35,41 @@ to the directory where the file hwloc.pc is located.
 
 
 EXAMPLE SCRIPTS
+---------------
 
 Look into the examples directory to get inspired.
 
 
 HWLOC API VERSION
+-----------------
 
 The configure step figures out the value of the HWLOC_API_VERSION constant
 from hwloc.h, and compiles and exports Hwloc functions accordingly.
-Thus, the Hwloc module depends on the hwloc version it was build against.
+Thus, the Hwloc module depends on the hwloc version it was built against.
 Undefined results are got when another hwloc library version is used at
 runtime.
 
 This constant was introduced in hwloc 1.0. For earlier hwloc versions,
-the Hwloc module exports this constant with an undefined value. Thus,
-it can be used in a Perl script using Hwloc as follows to make it
-work with different HWLOC_API_VERSIONS:
+the Hwloc module exports this constant with an undefined value. For convenience,
+the Hwloc module also exports the constant HWLOC_XSAPI_VERSION, which
+is always defined.
+
+These constants can be used in a Perl script using Hwloc as follows to make it
+work with different HWLOC_API_VERSIONs:
 
 $proc_t = HWLOC_API_VERSION() ? HWLOC_OBJ_PU() : HWLOC_OBJ_PROC();
 
-To bind a Perl script to a specific HWLOC_API_VERSION, check it
+To bind a Perl script to a specific hwloc API version, check it
 in a BEGIN block:
 
 BEGIN {
-  die "This script needs HWLOC_API_VERSION >= 0x00010000\n" unless
-    (HWLOC_API_VERSION && HWLOC_API_VERSION >= 0x00010000);
+  die "This script needs HWLOC_XSAPI_VERSION >= 0x00010000\n" unless
+    HWLOC_XSAPI_VERSION >= 0x00010000;
 }
 
 
 XML SUPPORT
+-----------
 
 The configure step tries to figure out if the hwloc library was
 built with XML support. Checking is done by executing the lstopo
@@ -69,17 +77,40 @@ command and trying to produce an XML output.
 
 Depending on the result, Hwloc functions dealing with XML
 are compiled and exported or not, and the special constant
-Hwloc::HWLOC_HAS_XML is exported with a true or false value.
+Sys::Hwloc::HWLOC_HAS_XML is exported with a true or false value.
 It can be used in Perl scripts using Hwloc as follows:
 
 if(HWLOC_HAS_XML) {
   $topology->export_xml('-');
 } else {
-  die "Your hwloc lib was build without XML support";
+  die "Your hwloc lib was built without XML support";
 }
 
 
+CPUSETS, NODESETS, BITMAPS
+--------------------------
+
+In hwloc 0.9 and 1.0 a hwloc_obj struct defines
+the struct members cpuset and nodeset with C type hwloc_cpuset.
+Data of type hwloc_cpuset become created and manipulated with
+functions of the Cpuset API.
+When build with these hwloc versions, the Sys::Hwloc module exports
+the functions of the Cpuset API, blesses these data into the
+namespace Sys::Hwloc::Cpuset, and provides OO-ish methods for them.
+
+In hwloc 1.1 a hwloc_obj struct defines struct members with
+C type hwloc_cpuset, and struct members with C type hwloc_nodeset.
+Both C types are aliases of the C type hwloc_bitmap. These
+data become created and manipulated with functions of the Bitmap API.
+When built with these hwloc versions, the Sys::Hwloc module
+exports the functions of the Bitmap API, blesses these data
+into the namespace Sys::Hwloc::Bitmap, and provides OO-ish
+methods for them. A distrinction between the C types hwloc_cpuset
+and hwloc_nodeset is not made.
+
+
 TESTING
+-------
 
 The test suite runs tests against the hwloc topology of the current
 machine.
@@ -97,22 +128,30 @@ if other versions are used and the hwloc API behaves differently.
 
 
 TODO
+----
 
+- implement binding API
 - extend XML support by using XML::LibXML
-- implement cpuset support
-- implement nodeset support
 
 
 BUGS
+----
 
-The Hwloc module was written by hand. Bugs are likely, but currently
-not known.
+Note that this is a wrapper, which cannot correct bugs in the underlying
+hwloc library.
+
+If you feel that you found a wrapper bug, report it via
+https://rt.cpan.org/
+
+If you feel that you found a hwloc bug, refer to
+http://www.open-mpi.org/projects/hwloc/ how to report it.
 
 
 COPYRIGHT AND LICENSE
+---------------------
 
-Copyright (C) 2010 Bernd Kallies
+Copyright (C) 2010 Zuse Institute Berlin
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation or under the same terms as perl itself.
+This package and its accompanying libraries is free software; you can
+redistribute it and/or modify it under the terms of the GPL version 2.0,
+or the Artistic License 2.0. Refer to LICENSE for the full license text.

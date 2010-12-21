@@ -1,12 +1,24 @@
-# -----------------------------------------------------------------------------
+################################################################################
+#
+#  Copyright 2010 Zuse Institute Berlin
+#
+#  This package and its accompanying libraries is free software; you can
+#  redistribute it and/or modify it under the terms of the GPL version 2.0,
+#  or the Artistic License 2.0. Refer to LICENSE for the full license text.
+#
+#  Please send comments to kallies@zib.de
+#
+################################################################################
+#
 # Retrieve topology information
 #
-# $Id: 03-topoinfo.t,v 1.2 2010/12/14 18:41:55 bzbkalli Exp $
-# -----------------------------------------------------------------------------
+# $Id: 03-topoinfo.t,v 1.4 2010/12/21 14:19:10 bzbkalli Exp $
+#
+################################################################################
 
 use Test::More;
 use strict;
-use Sys::Hwloc;
+use Sys::Hwloc 0.04;
 
 my $apiVersion = HWLOC_API_VERSION();
 my $proc_t     = $apiVersion ? HWLOC_OBJ_PU() : HWLOC_OBJ_PROC();
