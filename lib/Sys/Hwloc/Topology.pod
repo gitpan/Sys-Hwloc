@@ -59,12 +59,12 @@ Sys::Hwloc::Topology - Class representing a hwloc topology context
 
 =head1 DESCRIPTION
 
-Sys::Hwloc::Topology is the Perl namespace used for B<struct hwloc_topology>
+Sys::Hwloc::Topology is the Perl namespace used for I<struct hwloc_topology>
 data.
 
 The Sys::Hwloc::Topology class provides an object-oriented interface
 for hwloc C functions that act on topology contexts. In particular,
-every hwloc C function that gets a hwloc_topology pointer as first argument
+every hwloc C function that gets a I<hwloc_topology> pointer as first argument
 has an OO-ish counterpart in Sys::Hwloc::Topology.
 
 A Sys::Hwloc::Topology instance is created with B<hwloc_topology_init>() or
@@ -80,7 +80,7 @@ B<$topology-E<gt>destroy>().
 Refer to L<http://www.open-mpi.org/projects/hwloc> for the full specification.
 
 This section lists only methods that are specific to Sys::Hwloc. These are
-methods, which have to pendants in the hwloc C API, or which behave differently
+methods, which have no pendants in the hwloc C API, or which behave differently
 compared to their hwloc C API counterparts.
 
 =over 4
@@ -109,7 +109,7 @@ but unfortunately not to the rules of OO in Perl.
 
 Retrieves the topology support as reference to a hash.
 
-The corresponding hwloc C API function returns a pointer to a B<struct hwloc_topology_support>, instead.
+The corresponding hwloc C API function returns a pointer to a I<struct hwloc_topology_support>, instead.
 
 As with hwloc v1.1, the topology support hashref consists of the following:
 
@@ -142,10 +142,10 @@ As with hwloc v1.1, the topology support hashref consists of the following:
 
   $rc = $topology->compare_objects( $obj1, $obj2 );
 
-Compares two Sys::Hwloc::Obj instances.
-Returns 0, if they are equal. Returns 1, if they are not equal.
+Compares two L<Sys::Hwloc::Obj> instances.
+Returns 1, if they are equal. Returns 0, if they are not equal.
 
-Comparison is done by comparing the underlying raw B<hwloc_obj_t> pointer values.
+Comparison is done by comparing the underlying raw I<hwloc_obj_t> pointer values.
 
 =item B<sprintf_obj>
 
@@ -158,9 +158,16 @@ It returns a string that represents a given topology object in human-readable fo
 The arguments B<$prefix> and B<$verbose> are optional, and default to I<undef> and 0, respectively.
 The handling of these defaults is done by the hwloc C API.
 
-Note that this method is regarded as depreciated in hwloc v1.1.
+Note that this method is regarded as depreciated in hwloc-1.1.
 
 =back
+
+=head1 SEE ALSO
+
+L<hwloc>(7),
+L<Sys::Hwloc::Obj>(3pm),
+L<Sys::Hwloc::Cpuset>(3pm),
+L<Sys::Hwloc::Bitmap>(3pm)
 
 =head1 AUTHOR
 

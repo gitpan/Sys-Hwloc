@@ -58,14 +58,14 @@ Sys::Hwloc::Cpuset - Class representing a hwloc cpuset object
 
 =head1 DESCRIPTION
 
-Sys::Hwloc::Cpuset is the Perl namespace used for B<struct hwloc_cpuset>
-data prior hwloc v1.1.
+Sys::Hwloc::Cpuset is the Perl namespace used for I<struct hwloc_cpuset>
+data prior hwloc-1.1.
 
-Since hwloc v1.1, this class is replaced by Sys::Hwloc::Bitmap.
+Since hwloc-1.1, this class is replaced by L<Sys::Hwloc::Bitmap>.
 
 The Sys::Hwloc::Cpuset class provides an object-oriented interface
 for hwloc C functions that act on cpuset and nodeset objects. In particular,
-every hwloc C function that gets a hwloc_cpuset pointer as first argument
+every hwloc C function that gets a I<hwloc_cpuset> pointer as first argument
 has an OO-ish counterpart in Sys::Hwloc::Cpuset.
 
 A Sys::Hwloc::Cpuset instance is created with B<hwloc_cpuset_alloc>() or
@@ -79,7 +79,7 @@ B<$cpuset-E<gt>free>().
 Refer to L<http://www.open-mpi.org/projects/hwloc> for the full specification.
 
 This section lists only methods that are specific to Sys::Hwloc. These are
-methods, which have to pendants in the hwloc C API, or which behave differently
+methods, which have no pendants in the hwloc C API, or which behave differently
 compared to their hwloc C API counterparts.
 
 =over 4
@@ -164,9 +164,9 @@ This method is not part of the hwloc C API. It is equivalent to B<$oset-E<gt>isi
 
   $set->or( $oset );
 
-ORes $set with $oset, similar to B<|=>.
+ORes $set with $oset, similar to B<|=>. In hwloc-0.9 this method is named B<orset>.
 
-The long version of this in pure hwloc is:
+The long version of this in pure hwloc-1.0 is:
 
   $tempset = hwloc_cpuset_alloc;
   hwloc_cpuset_or($tempset, $set, $oset);
@@ -177,9 +177,9 @@ The long version of this in pure hwloc is:
 
   $set->and( $oset );
 
-ANDs $set with $oset, similar to B<&=>.
+ANDs $set with $oset, similar to B<&=>. In hwloc-0.9 this method is named B<andset>.
 
-The long version of this in pure hwloc is:
+The long version of this in pure hwloc-1.0 is:
 
   $tempset = hwloc_cpuset_alloc;
   hwloc_cpuset_and($tempset, $set, $oset);
@@ -192,7 +192,7 @@ The long version of this in pure hwloc is:
 
 ANDs $set with the negation of $oset.
 
-The long version of this in pure hwloc is:
+The long version of this in pure hwloc-1.0 is:
 
   $tempset = hwloc_cpuset_alloc;
   hwloc_cpuset_andnot($tempset, $set, $oset);
@@ -203,9 +203,9 @@ The long version of this in pure hwloc is:
 
   $set->xor( $oset );
 
-XORes $set with $oset, similar to B<^=>.
+XORes $set with $oset, similar to B<^=>. In hwloc-0.9 this method is named B<xorset>.
 
-The long version of this in pure hwloc is:
+The long version of this in pure hwloc-1.0 is:
 
   $tempset = hwloc_cpuset_alloc;
   hwloc_cpuset_xor($tempset, $set, $oset);
@@ -218,7 +218,7 @@ The long version of this in pure hwloc is:
 
 Negates $set.
 
-The long version of this in pure hwloc is:
+The long version of this in pure hwloc-1.0 is:
 
   $tempset = hwloc_cpuset_alloc;
   hwloc_cpuset_not($tempset, $set);
@@ -226,6 +226,14 @@ The long version of this in pure hwloc is:
   $set = $tempset;
 
 =back
+
+=head1 SEE ALSO
+
+L<hwloc>(7),
+L<Sys::Hwloc::Topology>(3pm),
+L<Sys::Hwloc::Obj>(3pm),
+L<Sys::Hwloc::Bitmap>(3pm)
+
 
 =head1 AUTHOR
 

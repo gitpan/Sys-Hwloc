@@ -1,5 +1,12 @@
 Revision history for Perl extension Sys::Hwloc.
 
+0.06  2010/12/22
+      - corrected typos in PODs
+      - added dependency on ExtUtils::Constant in Makefile.PL
+      - added high-level cpuset/nodeset tests on current topology
+      - added examples/gen_cpumapping (useful to set affinity maps
+        for MPI apps)
+
 0.05  2010/12/21
       - added Sys::Hwloc::Obj->sprintf() as additional alias for
         hwloc_obj_sprintf() and Sys::Hwloc::Topology->sprintf_obj()
@@ -13,7 +20,8 @@ Revision history for Perl extension Sys::Hwloc.
         (returns 0 where HWLOC_API_VERSION returns undef)
 
       - implemented Cpuset and Bitmap API with some basic helpers
-        and handy functions that are not part of the hwloc C API
+        and handy functions that are not part of the hwloc C API,
+        like $set->sprintf_list
 
       - destructors $topology->destroy, $cpuset->free, $bitmap->free
         set the unlerlying C pointer to NULL after freeing the

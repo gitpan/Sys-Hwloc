@@ -1,7 +1,7 @@
 ###############################################################################
 # Run test suite
 #
-# $Id: Makefile,v 1.3 2010/12/16 20:38:37 bzbkalli Exp $
+# $Id: Makefile,v 1.4 2010/12/22 14:36:20 bzbkalli Exp $
 ###############################################################################
 
 TESTS = 00-use.t \
@@ -11,7 +11,9 @@ TESTS = 00-use.t \
         04-obj.t \
         05-strings.t \
         06-helpers.t \
-        07-cpuset.t
+        07-cpuset.t \
+        08-bitmap.t \
+        09-sets.t
 
 all:
 	perl -I../blib/lib -I../blib/arch -MTest::Harness -e '$$Test::Harness::verbose=0; runtests @ARGV;' $(TESTS)

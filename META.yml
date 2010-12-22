@@ -1,13 +1,13 @@
 --- #YAML:1.0
 name:               Sys-Hwloc
-version:            0.05
+version:            0.06
 abstract:           Perl wrapper around the hwloc API
 author:
     - Bernd Kallies <kallies@zib.de>
-license:            gpl, artistic_2
+license:            perl
 distribution_type:  module
 configure_requires:
-    ExtUtils::MakeMaker:  0
+    ExtUtils::Constant:  0
 build_requires:
     ExtUtils::MakeMaker:  0
 requires:

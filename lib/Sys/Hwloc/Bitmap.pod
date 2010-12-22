@@ -60,14 +60,14 @@ Sys::Hwloc::Bitmap - Class representing a hwloc bitmap object
 
 =head1 DESCRIPTION
 
-Sys::Hwloc::Bitmap is the Perl namespace used for B<struct hwloc_cpuset>
-and B<struct hwloc_nodeset> data since hwloc v1.1.
+Sys::Hwloc::Bitmap is the Perl namespace used for I<struct hwloc_cpuset>
+and B<struct hwloc_nodeset> data since hwloc-1.1.
 
-Before hwloc v1.1, similar functionality was provided by Sys::Hwloc::Cpuset.
+Before hwloc-1.1, similar functionality was provided by L<Sys::Hwloc::Cpuset>.
 
 The Sys::Hwloc::Bitmap class provides an object-oriented interface
 for hwloc C functions that act on bitmap objects. In particular,
-every hwloc C function that gets a hwloc_bitmap pointer as first argument
+every hwloc C function that gets a I<hwloc_bitmap> pointer as first argument
 has an OO-ish counterpart in Sys::Hwloc::Bitmap.
 
 A Sys::Hwloc::Bitmap instance is created with B<hwloc_bitmap_alloc>() or
@@ -81,7 +81,7 @@ B<$bitmap-E<gt>free>().
 Refer to L<http://www.open-mpi.org/projects/hwloc> for the full specification.
 
 This section lists only methods that are specific to Sys::Hwloc. These are
-methods, which have to pendants in the hwloc C API, or which behave differently
+methods, which have no pendants in the hwloc C API, or which behave differently
 compared to their hwloc C API counterparts.
 
 =over 4
@@ -228,6 +228,13 @@ The long version of this in pure hwloc is:
   $map = $tempmap;
 
 =back
+
+=head1 SEE ALSO
+
+L<hwloc>(7),
+L<Sys::Hwloc::Topology>(3pm),
+L<Sys::Hwloc::Obj>(3pm),
+L<Sys::Hwloc::Cpuset>(3pm)
 
 =head1 AUTHOR
 

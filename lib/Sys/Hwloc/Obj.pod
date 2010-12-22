@@ -51,18 +51,18 @@ Sys::Hwloc::Obj - Class representing a hwloc topology object
 
 =head1 DESCRIPTION
 
-Sys::Hwloc::Obj is the Perl namespace used for B<struct hwloc_obj>
+Sys::Hwloc::Obj is the Perl namespace used for I<struct hwloc_obj>
 data.
 
 The Sys::Hwloc::Obj class provides an object-oriented interface
-for members of B<struct hwloc_obj>, and for hwloc C functions that act on
+for members of I<struct hwloc_obj>, and for hwloc C functions that act on
 topology objects without involving the topology context. In particular,
 every hwloc C function that gets a hwloc_obj pointer as first argument
 has an OO-ish counterpart in Sys::Hwloc::Obj.
 
 There are no constructors and destructors of Sys::Hwloc::Obj instances.
 
-A Sys::Hwloc::Obj instance is retrieved either from a Sys::Hwloc::Topology instance,
+A Sys::Hwloc::Obj instance is retrieved either from a L<Sys::Hwloc::Topology> instance,
 or from another Sys::Hwloc::Obj instance.
 
 =head1 METHODS
@@ -70,7 +70,7 @@ or from another Sys::Hwloc::Obj instance.
 Refer to L<http://www.open-mpi.org/projects/hwloc> for the full specification.
 
 This section lists only methods that are specific to Sys::Hwloc. These are
-methods, which have to pendants in the hwloc C API, or which behave differently
+methods, which have no pendants in the hwloc C API, or which behave differently
 compared to their hwloc C API counterparts.
 
 =over 4
@@ -81,7 +81,7 @@ compared to their hwloc C API counterparts.
 
 Retrieves the object memory as reference to a hash.
 
-The corresponding hwloc C struct member points to a B<struct hwloc_obj_memory_s>.
+The corresponding hwloc C struct member points to a I<struct hwloc_obj_memory_s>.
 
 As with hwloc v1.1, the memory hashref consists of the following:
 
@@ -102,9 +102,9 @@ references to hashes with
 
 Retrieves the object attributes as reference to a hash.
 
-The corresponding hwloc C struct member points to a B<union hwloc_obj_attr_u>.
+The corresponding hwloc C struct member points to a I<union hwloc_obj_attr_u>.
 
-The content of the attrs hashref depends on the object type and the hwloc version.
+The content of the attrs hashref depends on the object type and the hwloc version, and may be empty.
 
 As with hwloc 1.1, if e.g. $obj->type == HWLOC_OBJ_CACHE, there will be
 
@@ -142,9 +142,9 @@ constructs are equivalent:
 
 Returns an object that represents the object's cpuset.
 
-Before hwloc v1.1, this method returns an instance of Sys::Hwloc::Cpuset.
+Before hwloc-1.1, this method returns an instance of L<Sys::Hwloc::Cpuset>.
 
-Since hwloc v1.1, this method returns an instance of Sys::Hwloc::Bitmap. A class
+Since hwloc-1.1, this method returns an instance of L<Sys::Hwloc::Bitmap>. A class
 Sys::Hwloc::Cpuset does not exist.
 
 =item B<nodeset>
@@ -153,10 +153,10 @@ Sys::Hwloc::Cpuset does not exist.
 
 Returns an object that represents the object's nodeset.
 
-Before hwloc v1.1, this method returns an instance of Sys::Hwloc::Cpuset. There is
+In hwloc-1.1, this method returns an instance of L<Sys::Hwloc::Cpuset>. There is
 no class Sys::Hwloc::Nodeset.
 
-Since hwloc v1.1, this method returns an instance of Sys::Hwloc::Bitmap. A class
+Since hwloc-1.1, this method returns an instance of L<Sys::Hwloc::Bitmap>. A class
 Sys::Hwloc::Nodeset does not exist.
 
 =item B<infos>
@@ -165,7 +165,7 @@ Sys::Hwloc::Nodeset does not exist.
 
 Retrieves the object info as reference to a hash.
 
-The corresponding hwloc C struct member points to an array of B<struct hwloc_obj_info_s>.
+The corresponding hwloc C struct member points to an array of I<struct hwloc_obj_info_s>.
 
 The $infos hash represents individual object infos as name->value pairs.
 
@@ -205,6 +205,8 @@ This method is an alias of B<Sys::Hwloc::hwloc_obj_cpuset_sprintf>().
 
 It returns a string that represents the cpuset of a given single topology object in human-readable form.
 
+The call B<$obj->cpuset->sprintf> yields the same result.
+
 In contrast to that, the function B<Sys::Hwloc::hwloc_obj_cpuset_sprintf>() understands more than one object in its argument list.
 
 =item B<sprintf>
@@ -226,13 +228,20 @@ Note that this method is regarded as depreciated in hwloc v1.1.
 
 Compares the Sys::Hwloc::Obj instance $obj with the Sys::Hwloc::Obj instance $oobj.
 
-Returns 0, if they are equal. Returns 1, if they are not equal.
+Returns 1, if they are equal. Returns 0, if they are not equal.
 
 Comparison is done by comparing the underlying raw B<hwloc_obj_t> pointer values.
 
 The method is an alias for B<Sys::Hwloc::hwloc_compare_objects($topo,$obj1,$obj2)>.
 
 =back
+
+=head1 SEE ALSO
+
+L<hwloc>(7),
+L<Sys::Hwloc::Topology>(3pm),
+L<Sys::Hwloc::Cpuset>(3pm),
+L<Sys::Hwloc::Bitmap>(3pm)
 
 =head1 AUTHOR
 

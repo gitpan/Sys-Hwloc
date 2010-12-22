@@ -12,7 +12,7 @@
 #
 # Makefile for Sys::Hwloc
 #
-# $Id: Makefile.PL,v 1.15 2010/12/21 19:50:31 bzbkalli Exp $
+# $Id: Makefile.PL,v 1.16 2010/12/22 09:59:45 bzbkalli Exp $
 #
 ################################################################################
 
@@ -22,14 +22,17 @@ use ExtUtils::MakeMaker;
 use Config;
 
 %INFOS   = (
-	    NAME              => 'Sys::Hwloc',
-	    VERSION_FROM      => 'lib/Sys/Hwloc.pm',
-	    AUTHOR            => 'Bernd Kallies <kallies@zib.de>',
-	    LICENSE           => 'gpl, artistic_2',
-	    ABSTRACT          => 'Perl wrapper around the hwloc API',
-	    PREREQ_PM         => {
+	    NAME               => 'Sys::Hwloc',
+	    VERSION_FROM       => 'lib/Sys/Hwloc.pm',
+	    AUTHOR             => 'Bernd Kallies <kallies@zib.de>',
+	    LICENSE            => 'perl',
+	    ABSTRACT           => 'Perl wrapper around the hwloc API',
+	    PREREQ_PM          => {
 				   'Test::More' => '0.89',
-				 },
+				  },
+	    CONFIGURE_REQUIRES => {
+				   'ExtUtils::Constant' => 0,
+				  },
 	   );
 
 # --

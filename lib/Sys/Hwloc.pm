@@ -9,7 +9,7 @@
 #  Please send comments to kallies@zib.de
 #
 ################################################################################
-# $Id: Hwloc.pm,v 1.20 2010/12/21 19:24:02 bzbkalli Exp $
+# $Id: Hwloc.pm,v 1.23 2010/12/22 16:25:09 bzbkalli Exp $
 ################################################################################
 
 package Sys::Hwloc;
@@ -182,7 +182,7 @@ our @EXPORT  = qw(
 
 }
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 sub AUTOLOAD {
   # This AUTOLOAD is used to 'autoload' constants from the constant()
@@ -289,12 +289,12 @@ or going the OO-ish way:
 
 =head1 DESCRIPTION
 
-The Hwloc module provides a perl API for the hwloc C API.
+The Hwloc module provides a Perl wrapper API around the Portable Hardware Locality (hwloc) C API.
 
 Visit L<http://www.open-mpi.org/projects/hwloc> for information about hwloc.
 
 The module provides access to the functions of the hwloc API as well
-as an object-oriented interface to hwloc_topology, hwloc_obj and hwloc_cpuset objects.
+as an object-oriented interface to I<hwloc_topology>, I<hwloc_obj> and I<hwloc_cpuset> objects.
 
 =head1 CONSTANTS
 
@@ -333,10 +333,6 @@ The exported methods are listed below.
 
 Each listing contains the methods that conform to the hwloc C API,
 and the corresponding Hwloc perl API OO-ish methods, if implemented.
-
-=head2 Topoogy object types
-
-       $val  = hwloc_compare_types($type1,$type2)
 
 =head2 Create and destroy topologies
 
@@ -451,6 +447,8 @@ and the corresponding Hwloc perl API OO-ish methods, if implemented.
        $val  = $obj->info_by_name($string)                       since  hwloc-1.1
 
 =head2 Object type helpers
+
+       $val  = hwloc_compare_types($type1,$type2)
 
        $val  = hwloc_get_type_or_below_depth($t,$type)
        $val  = hwloc_get_type_or_above_depth($t,$type)
@@ -712,8 +710,8 @@ specific hwloc C library version. Depending on the version
 of the hwloc C library, different methods are exported.
 
 The compile-time hwloc API version number is available to
-a Perl script via the constants HWLOC_API_VERSION and
-HWLOC_XSAPI_VERSION. At the time of writing of this document,
+a Perl script via the constants B<HWLOC_API_VERSION> and
+B<HWLOC_XSAPI_VERSION>. At the time of writing of this document,
 the values are as follows:
 
    hwloc-version  HWLOC_API_VERSION  HWLOC_XSAPI_VERSION
@@ -726,7 +724,7 @@ To bind a Perl script to a specific hwloc API version, check
 it in a BEGIN block:
 
   BEGIN {
-    if(HWLOC_XSAPI_VERSION < 0x00010100) {
+    if(HWLOC_XSAPI_VERSION() < 0x00010100) {
       die "This script needs at least hwloc-1.1";
     }
   }
@@ -734,10 +732,10 @@ it in a BEGIN block:
 =head2 Object Oriented Interface
 
 The hwloc C API defines data structures and provides functions
-that take pointers to variables of type struct as arguments. The hwloc
+that take pointers to variables of type I<struct> as arguments. The hwloc
 C API is not object-oriented.
 
-The Sys::Hwloc Perl module blesses the basic hwloc C data structuresinto separate name spaces. Thus these become Perl objects.
+The Sys::Hwloc Perl module blesses the basic hwloc C data structures into separate name spaces. Thus these become Perl objects.
 The relation between hwloc C types and Perl classes is as follows:
 
   C type            Perl class
@@ -754,10 +752,12 @@ the same like the corresponding C source code.
 
 In addition, the Sys::Hwloc module provides aliases to
 most hwloc C API functions as methods in Sys::Hwloc classes.
-In particular, all C functions that take a hwloc_topology_t
+In particular, all C functions that take a I<hwloc_topology_t>
 pointer as first argument, are also accessible as methods of
-the Sys::Hwloc::Topology class. The same holds for the other
-Sys::Hwloc classes. Examples:
+the L<Sys::Hwloc::Topology> class. The same holds for the other
+Sys::Hwloc classes.
+
+Examples:
 
   classic                                 object-oriented
   ----------------------------------      ------------------
@@ -771,11 +771,13 @@ Sys::Hwloc classes. Examples:
   hwloc_bitmap_zero($bitmap)              $bitmap->zero
   hwloc_bitmap_only($bitmap,$id)          $bitmap->only($id)
 
-Note that there is no DESTROY method in any Sys::Hwloc class,
+Note that there is no B<DESTROY> method in any Sys::Hwloc class,
 that may destroy an object and its underlying C data automatically
 when its reference count goes to zero. It is required to
 call the free-ing hwloc API functions explicitely, when allocated
-memory needs to be freed. Example:
+memory needs to be freed.
+
+Example:
 
   $topo = Sys::Hwloc::Topology->init; # allocates memory.
   # $topo = undef;                    # WRONG, does not free!
@@ -784,35 +786,46 @@ memory needs to be freed. Example:
 
 =head2 Cpusets, Nodesets, Bitmaps
 
-In hwloc-0.9 and 1.0 a hwloc_obj struct defines
-the struct member cpuset with C type hwloc_cpuset. In hwloc-1.0 the
-struct member nodeset was introduced with C type hwloc_cpuset.
-Data of type hwloc_cpuset become created and manipulated with
+In hwloc-0.9 and 1.0 a I<hwloc_obj> struct defines
+the struct member I<cpuset> with C type I<hwloc_cpuset>. In hwloc-1.0 the
+struct member I<nodeset> was added with C type I<hwloc_cpuset>.
+Data of type I<hwloc_cpuset> become created and manipulated with
 functions of the B<Cpuset API>.
 
 When build with these hwloc versions, the Sys::Hwloc module exports
 the functions of the Cpuset API, blesses these data into the
-namespace B<Sys::Hwloc::Cpuset>, and provides OO-ish methods for them.
+namespace L<Sys::Hwloc::Cpuset>, and provides OO-ish methods for them.
 The namespace Sys::Hwloc::Bitmap does not exist.
 
-In hwloc-1.1 a hwloc_obj struct defines struct members with
-C type hwloc_cpuset, and struct members with C type hwloc_nodeset.
-Both C types are aliases of the C type hwloc_bitmap. These
+In hwloc-1.1 a I<hwloc_obj> struct defines struct members with
+C type I<hwloc_cpuset>, and struct members with C type I<hwloc_nodeset>.
+Both C types are aliases of the C type I<hwloc_bitmap>. These
 data become created and manipulated with functions of the B<Bitmap API>.
 
 When built with these hwloc versions, the Sys::Hwloc module
 exports the functions of the Bitmap API, blesses these data
-into the namespace B<Sys::Hwloc::Bitmap>, and provides OO-ish
-methods for them. A distrinction between the C types hwloc_cpuset
-and hwloc_nodeset is not made. The namespace Sys::Hwloc::Cpuset
+into the namespace L<Sys::Hwloc::Bitmap>, and provides OO-ish
+methods for them. A distrinction between the C types I<hwloc_cpuset>
+and I<hwloc_nodeset> is not made. The namespace Sys::Hwloc::Cpuset
 does not exist.
+
+Example:
+
+  if(HWLOC_XSAPI_VERSION() <= 0x00010000) {
+    $set = hwloc_cpuset_alloc();
+    $set->cpu(0);
+  } else {
+    $set = hwloc_bitmap_alloc();
+    $set->only(0);
+  }
+  $set->free;
 
 =head2 Stringifying Functions
 
 The hwloc C API contains functions that stringify topology objects,
 cpusets or bitmaps into something human-readable.
 These functions are named B<hwloc_*_snprintf*> or B<hwloc_*_asprintf*>,
-and act like B<snprintf> or B<asprintf> from libc, except that they
+and act like B<snprintf> or B<asprintf>, except that they
 do not take a format argument.
 
 These functions do not exist in Sys::Hwloc. They were replaced by simple
@@ -845,6 +858,15 @@ with the hope that they are useful somehow. These are:
   hwloc_bitmap_ids            returns bitmap bits as list of decimal numbers
   hwloc_bitmap_includes       reverse of hwloc_bitmap_isincluded
 
+=head1 BUGS
+
+Note that the Sys::Hwloc module is a wrapper,
+which depends on the underlying hwloc C library.
+
+If you feel that you found a hwloc bug, refer to
+L<http://www.open-mpi.org/projects/hwloc/> how to report it.
+
+If you feel that you found a wrapper bug, report it via L<https://rt.cpan.org/>.
 
 =head1 SEE ALSO
 
