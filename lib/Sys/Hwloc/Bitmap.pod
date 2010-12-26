@@ -61,7 +61,7 @@ Sys::Hwloc::Bitmap - Class representing a hwloc bitmap object
 =head1 DESCRIPTION
 
 Sys::Hwloc::Bitmap is the Perl namespace used for I<struct hwloc_cpuset>
-and B<struct hwloc_nodeset> data since hwloc-1.1.
+and I<struct hwloc_nodeset> data since hwloc-1.1.
 
 Before hwloc-1.1, similar functionality was provided by L<Sys::Hwloc::Cpuset>.
 

@@ -83,7 +83,7 @@ Retrieves the object memory as reference to a hash.
 
 The corresponding hwloc C struct member points to a I<struct hwloc_obj_memory_s>.
 
-As with hwloc v1.1, the memory hashref consists of the following:
+As with hwloc-1.1, the memory hashref consists of the following:
 
   $memory->{total_memory}
   $memory->{local_memory}
@@ -106,7 +106,7 @@ The corresponding hwloc C struct member points to a I<union hwloc_obj_attr_u>.
 
 The content of the attrs hashref depends on the object type and the hwloc version, and may be empty.
 
-As with hwloc 1.1, if e.g. $obj->type == HWLOC_OBJ_CACHE, there will be
+As with hwloc-1.1, if e.g. $obj->type == HWLOC_OBJ_CACHE, there will be
 
   $obj->attr->{cache}->{depth}
   $obj->attr->{cache}->{size}
@@ -153,7 +153,7 @@ Sys::Hwloc::Cpuset does not exist.
 
 Returns an object that represents the object's nodeset.
 
-In hwloc-1.1, this method returns an instance of L<Sys::Hwloc::Cpuset>. There is
+In hwloc-1.0, this method returns an instance of L<Sys::Hwloc::Cpuset>. There is
 no class Sys::Hwloc::Nodeset.
 
 Since hwloc-1.1, this method returns an instance of L<Sys::Hwloc::Bitmap>. A class
@@ -179,7 +179,7 @@ A method B<infos_count> that returns the extent of the $infos hash is not provid
 
   $string = $obj->sprintf_type( $verbose );
 
-This method is an alias of B<Sys::Hwloc::hwloc_obj_type_sprintf>().
+This method is an alias of B<Sys::Hwloc::hwloc_obj_type_sprintf>($obj,$verbose).
 
 It returns a string that represents the type of a given topology object in human-readable form.
 
@@ -190,7 +190,7 @@ The handling of this default is done by the hwloc C API.
 
   $string = $obj->sprintf_attr( $separator, $verbose );
 
-This method is an alias of B<Sys::Hwloc::hwloc_obj_attr_sprintf>().
+This method is an alias of B<Sys::Hwloc::hwloc_obj_attr_sprintf>($obj,$separator,$verbose).
 
 It returns a string that represents the attributes of a given topology object in human-readable form.
 
@@ -201,7 +201,7 @@ The handling of these defaults is done by the hwloc C API.
 
   $string = $obj->sprintf_cpuset;
 
-This method is an alias of B<Sys::Hwloc::hwloc_obj_cpuset_sprintf>().
+This method is an alias of B<Sys::Hwloc::hwloc_obj_cpuset_sprintf>($obj).
 
 It returns a string that represents the cpuset of a given single topology object in human-readable form.
 
@@ -213,14 +213,14 @@ In contrast to that, the function B<Sys::Hwloc::hwloc_obj_cpuset_sprintf>() unde
 
   $string = $obj->sprintf( $prefix, $verbose );
 
-This method is an alias of B<Sys::Hwloc::hwloc_obj_sprintf>().
+This method is an alias of B<Sys::Hwloc::hwloc_obj_sprintf>($obj,$prefix,$verbose).
 
 It returns a string that represents a given topology object in human-readable form.
 
 The arguments B<$prefix> and B<$verbose> are optional, and default to undef and 0, respectively.
 The handling of these defaults is done by the hwloc C API.
 
-Note that this method is regarded as depreciated in hwloc v1.1.
+Note that this method is regarded as depreciated in hwloc-1.1.
 
 =item B<is_same_obj>
 

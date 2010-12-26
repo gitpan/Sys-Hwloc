@@ -9,7 +9,7 @@
 #  Please send comments to kallies@zib.de
 #
 ################################################################################
-# $Id: Hwloc.pm,v 1.23 2010/12/22 16:25:09 bzbkalli Exp $
+# $Id: Hwloc.pm,v 1.24 2010/12/22 16:44:30 bzbkalli Exp $
 ################################################################################
 
 package Sys::Hwloc;
@@ -842,7 +842,7 @@ Example:
 
   # This is Perl
   printf "%s\n", hwloc_obj_type_sprintf($obj, 1);
-  printf "%s\n", $obj->sprintf(1);
+  printf "%s\n", $obj->sprintf_type(1);
 
 =head2 Functions not in the hwloc C API
 
