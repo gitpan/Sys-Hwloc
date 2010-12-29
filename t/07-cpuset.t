@@ -12,13 +12,13 @@
 #
 # Test the Sys::Hwloc::Cpuset API (hwloc-0.9 and 1.0)
 #
-# $Id: 07-cpuset.t,v 1.9 2010/12/21 19:24:02 bzbkalli Exp $
+# $Id: 07-cpuset.t,v 1.10 2010/12/29 16:15:20 bzbkalli Exp $
 #
 ################################################################################
 
 use Test::More 0.94;
 use strict;
-use Sys::Hwloc 0.05;
+use Sys::Hwloc 0.07 qw(:DEFAULT :cpuset);
 
 plan tests => 114;
 

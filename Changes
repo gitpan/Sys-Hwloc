@@ -1,5 +1,13 @@
 Revision history for Perl extension Sys::Hwloc.
 
+0.07  2010/12/29
+      - implemented CPU binding
+      - implemented Memory binding
+      - added support for upcoming hwloc_get_api_version() check
+      - refined Makefile.PL (use %Config for preproc and compile/link)
+      - not export Cpuset API, Bitmap API, Binding API by default,
+        but by %EXPORT_TAGS going into @EXPORT_OK
+
 0.06  2010/12/22
       - corrected typos in PODs
       - added dependency on ExtUtils::Constant in Makefile.PL

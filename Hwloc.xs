@@ -9,7 +9,7 @@
  *  Please send comments to kallies@zib.de
  *
  * *******************************************************************
- * $Id: Hwloc.xs,v 1.30 2010/12/21 19:44:16 bzbkalli Exp $
+ * $Id: Hwloc.xs,v 1.33 2010/12/29 13:28:02 bzbkalli Exp $
  * ******************************************************************* */
 
 #include "EXTERN.h"
@@ -395,6 +395,7 @@ static int hwloc_bitmap_snprintf_list(char *buf, size_t buflen, hwloc_const_bitm
  * The code is adapted from bitmap.c in recent Linux kernel.
  */
 
+#if HWLOC_XSAPI_VERSION
 #if HWLOC_XSAPI_VERSION <= 0x00010000
 static int hwloc_cpuset_sscanf_list(hwloc_cpuset_t map, const char *s) {
   unsigned a, b;
@@ -470,6 +471,7 @@ static int hwloc_bitmap_sscanf_list(hwloc_bitmap_t map, const char *s) {
 
 }
 #endif
+#endif
 
 /* =================================================================== */
 /* XS Code below                                                       */
@@ -478,6 +480,28 @@ static int hwloc_bitmap_sscanf_list(hwloc_bitmap_t map, const char *s) {
 MODULE = Sys::Hwloc                  PACKAGE = Sys::Hwloc
 
 INCLUDE: const-xs.inc
+
+ # -------------------------------------------------------------------
+ # API version (runtime)
+ # -------------------------------------------------------------------
+
+#ifdef HAVE_HWLOC_GET_API_VERSION
+int
+hwloc_get_api_version()
+  PROTOTYPE:
+  CODE:
+    RETVAL = hwloc_get_api_version();
+  OUTPUT:
+    RETVAL
+
+#else
+void
+hwloc_get_api_version()
+  PROTOTYPE:
+  PPCODE:
+    XSRETURN_UNDEF;
+
+#endif
 
  # -------------------------------------------------------------------
  # Topology object types
@@ -1007,12 +1031,225 @@ hwloc_obj_get_info_by_name(obj,name)
   
 
  # -------------------------------------------------------------------
- # Binding
- # ToDo: hwloc_set_cpubind
- # ToDo: hwloc_get_cpubind
- # ToDo: hwloc_set_proc_cpubind
- # ToDo: hwloc_get_proc_cpubind
+ # CPU Binding
  # -------------------------------------------------------------------
+
+#if HWLOC_XSAPI_VERSION >= 0x00010100
+int
+hwloc_get_cpubind(topo,set,flags)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  int              flags
+  PROTOTYPE: $$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_cpubind = 1
+    Sys::Hwloc::hwloc_set_cpubind     = 10
+    Sys::Hwloc::Topology::set_cpubind = 11
+  CODE:
+    if(ix < 10)
+      RETVAL = hwloc_get_cpubind(topo,set,flags);
+    else if(ix < 20)
+      RETVAL = hwloc_set_cpubind(topo,set,flags);
+    else
+      croak("Should not come here in Sys::Hwloc::hwloc_get_cpubind, alias = %d", (int)ix);
+  OUTPUT:
+    RETVAL
+
+
+int
+hwloc_get_proc_cpubind(topo,pid,set,flags)
+  hwloc_topology_t topo
+  pid_t            pid
+  hwloc_bitmap_t   set
+  int              flags
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_proc_cpubind = 1
+    Sys::Hwloc::hwloc_set_proc_cpubind     = 10
+    Sys::Hwloc::Topology::set_proc_cpubind = 11
+  CODE:
+    if(ix < 10)
+      RETVAL = hwloc_get_proc_cpubind(topo,pid,set,flags);
+    else if(ix < 20)
+      RETVAL = hwloc_set_proc_cpubind(topo,pid,set,flags);
+    else
+      croak("Should not come here in Sys::Hwloc::hwloc_get_proc_cpubind, alias = %d", (int)ix);
+  OUTPUT:
+    RETVAL
+
+#else
+#if HWLOC_XSAPI_VERSION
+int
+hwloc_get_cpubind(topo,set,flags)
+  hwloc_topology_t topo
+  hwloc_cpuset_t   set
+  int              flags
+  PROTOTYPE: $$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_cpubind = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_cpubind(topo,set,flags);
+  OUTPUT:
+    RETVAL
+
+
+int
+hwloc_get_proc_cpubind(topo,pid,set,flags)
+  hwloc_topology_t topo
+  pid_t            pid
+  hwloc_cpuset_t   set
+  int              flags
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_proc_cpubind = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_proc_cpubind(topo,pid,set,flags);
+  OUTPUT:
+    RETVAL
+
+#endif
+int
+hwloc_set_cpubind(topo,set,flags)
+  hwloc_topology_t topo
+  hwloc_cpuset_t   set
+  int              flags
+  PROTOTYPE: $$$
+  ALIAS:
+    Sys::Hwloc::Topology::set_cpubind = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_set_cpubind(topo,set,flags);
+  OUTPUT:
+    RETVAL
+
+
+int
+hwloc_set_proc_cpubind(topo,pid,set,flags)
+  hwloc_topology_t topo
+  pid_t            pid
+  hwloc_cpuset_t   set
+  int              flags
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::set_proc_cpubind = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_set_proc_cpubind(topo,pid,set,flags);
+  OUTPUT:
+    RETVAL
+
+#endif
+
+ # -------------------------------------------------------------------
+ # Memory binding
+ # -------------------------------------------------------------------
+
+#if HWLOC_XSAPI_VERSION >= 0x00010100
+int
+hwloc_set_membind(topo,set,policy,flags)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  int              policy
+  int              flags
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::set_membind         = 1
+    Sys::Hwloc::hwloc_set_membind_nodeset     = 10
+    Sys::Hwloc::Topology::set_membind_nodeset = 11
+  CODE:
+    if(ix < 10)
+      RETVAL = hwloc_set_membind(topo,set,policy,flags);
+    else if(ix < 20)
+      RETVAL = hwloc_set_membind_nodeset(topo,set,policy,flags);
+    else
+      croak("Should not come here in Sys::Hwloc::hwloc_set_membind, alias = %d", (int)ix);
+  OUTPUT:
+    RETVAL
+  
+
+int
+hwloc_set_proc_membind(topo,pid,set,policy,flags)
+  hwloc_topology_t topo
+  pid_t            pid
+  hwloc_bitmap_t   set
+  int              policy
+  int              flags
+  PROTOTYPE: $$$$$
+  ALIAS:
+    Sys::Hwloc::Topology::set_proc_membind         = 1
+    Sys::Hwloc::hwloc_set_proc_membind_nodeset     = 10
+    Sys::Hwloc::Topology::set_proc_membind_nodeset = 11
+  CODE:
+    if(ix < 10)
+      RETVAL = hwloc_set_proc_membind(topo,pid,set,policy,flags);
+    else if(ix < 20)
+      RETVAL = hwloc_set_proc_membind_nodeset(topo,pid,set,policy,flags);
+    else
+      croak("Should not come here in Sys::Hwloc::hwloc_set_proc_membind, alias = %d", (int)ix);
+  OUTPUT:
+    RETVAL
+
+
+int
+hwloc_get_membind(topo,set,policy,flags)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  SV              *policy
+  int              flags
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_membind         = 1
+    Sys::Hwloc::hwloc_get_membind_nodeset     = 10
+    Sys::Hwloc::Topology::get_membind_nodeset = 11
+  PREINIT:
+    hwloc_membind_policy_t  p;
+    SV                     *pv;
+  CODE:
+    if(! SvROK(policy))
+      croak("Usage: Sys::Hwloc::hwloc_get_membind($topo,$set,\\$policy,$flags)");
+    pv = SvRV(policy);
+    if(ix < 10)
+      RETVAL = hwloc_get_membind(topo,set,&p,flags);
+    else if(ix < 20)
+      RETVAL = hwloc_get_membind_nodeset(topo,set,&p,flags);
+    else
+      croak("Should not come here in Sys::Hwloc::hwloc_get_membind, alias = %d", (int)ix);
+    sv_setiv(pv, (int)p);
+  OUTPUT:
+    RETVAL
+
+int
+hwloc_get_proc_membind(topo,pid,set,policy,flags)
+  hwloc_topology_t topo
+  pid_t            pid
+  hwloc_bitmap_t   set
+  SV              *policy
+  int              flags
+  PROTOTYPE: $$$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_proc_membind         = 1
+    Sys::Hwloc::hwloc_get_proc_membind_nodeset     = 10
+    Sys::Hwloc::Topology::get_proc_membind_nodeset = 11
+  PREINIT:
+    hwloc_membind_policy_t  p;
+    SV                     *pv;
+  CODE:
+    if(! SvROK(policy))
+      croak("Usage: Sys::Hwloc::hwloc_get_proc_membind($topo,$pid,$set,\\$policy,$flags)");
+    pv = SvRV(policy);
+    if(ix < 10)
+      RETVAL = hwloc_get_proc_membind(topo,pid,set,&p,flags);
+    else if(ix < 20)
+      RETVAL = hwloc_get_proc_membind_nodeset(topo,pid,set,&p,flags);
+    else
+      croak("Should not come here in Sys::Hwloc::hwloc_get_proc_membind, alias = %d", (int)ix);
+    sv_setiv(pv, (int)p);
+  OUTPUT:
+    RETVAL
+
+#endif
 
  # -------------------------------------------------------------------
  # Object type helpers

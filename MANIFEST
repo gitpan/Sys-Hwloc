@@ -18,6 +18,7 @@ t/06-helpers.t
 t/07-cpuset.t
 t/08-bitmap.t
 t/09-sets.t
+t/10-bind.t
 fallback/const-c.inc
 fallback/const-xs.inc
 lib/Sys/Hwloc.pm

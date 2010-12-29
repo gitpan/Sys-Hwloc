@@ -12,13 +12,13 @@
 #
 # Test the Sys::Hwloc::Bitmap API (hwloc-1.1)
 #
-# $Id: 08-bitmap.t,v 1.5 2010/12/21 19:24:02 bzbkalli Exp $
+# $Id: 08-bitmap.t,v 1.6 2010/12/29 16:15:20 bzbkalli Exp $
 #
 ################################################################################
 
 use Test::More 0.94;
 use strict;
-use Sys::Hwloc 0.05;
+use Sys::Hwloc 0.07 qw(:DEFAULT :bitmap);
 
 plan tests => 114;
 

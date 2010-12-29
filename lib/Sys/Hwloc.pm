@@ -9,189 +9,260 @@
 #  Please send comments to kallies@zib.de
 #
 ################################################################################
-# $Id: Hwloc.pm,v 1.24 2010/12/22 16:44:30 bzbkalli Exp $
+# $Id: Hwloc.pm,v 1.28 2010/12/29 16:15:20 bzbkalli Exp $
 ################################################################################
 
 package Sys::Hwloc;
 
 use 5.006;
 use strict;
+use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use warnings;
 use Carp;
 
-require Exporter;
-use AutoLoader;
+BEGIN {
 
-our @ISA     = qw(Exporter);
+  $VERSION = '0.07';
 
-our @EXPORT  = qw(
-		  HWLOC_API_VERSION
-		  HWLOC_XSAPI_VERSION
-		  HWLOC_HAS_XML
+  require Exporter;
+  use AutoLoader;
+  @ISA = qw(Exporter);
 
-		  HWLOC_OBJ_CACHE
-		  HWLOC_OBJ_CORE
-		  HWLOC_OBJ_MACHINE
-		  HWLOC_OBJ_MISC
-		  HWLOC_OBJ_NODE
-		  HWLOC_OBJ_SOCKET
-		  HWLOC_OBJ_SYSTEM
-		  HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM
-		  HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM
-		  HWLOC_TYPE_DEPTH_MULTIPLE
-		  HWLOC_TYPE_DEPTH_UNKNOWN
-		  HWLOC_TYPE_UNORDERED
+  sub HWLOC_API_VERSION   { @HWLOC_API_VERSION@ }
+  sub HWLOC_XSAPI_VERSION { HWLOC_API_VERSION() ? HWLOC_API_VERSION() : 0 }
 
-		  hwloc_compare_types
+  @EXPORT  = qw(
+		HWLOC_API_VERSION
+		HWLOC_XSAPI_VERSION
+		HWLOC_HAS_XML
+		hwloc_get_api_version
 
-		  hwloc_topology_check hwloc_topology_destroy hwloc_topology_init hwloc_topology_load
+		HWLOC_OBJ_CACHE
+		HWLOC_OBJ_CORE
+		HWLOC_OBJ_MACHINE
+		HWLOC_OBJ_MISC
+		HWLOC_OBJ_NODE
+		HWLOC_OBJ_SOCKET
+		HWLOC_OBJ_SYSTEM
+		HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM
+		HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM
+		HWLOC_TYPE_DEPTH_MULTIPLE
+		HWLOC_TYPE_DEPTH_UNKNOWN
+		HWLOC_TYPE_UNORDERED
 
-		  hwloc_topology_ignore_type hwloc_topology_ignore_type_keep_structure hwloc_topology_ignore_all_keep_structure
-		  hwloc_topology_set_flags hwloc_topology_set_fsroot hwloc_topology_set_synthetic hwloc_topology_set_xml
+		hwloc_compare_types
 
-		  hwloc_topology_export_xml
+		hwloc_topology_check hwloc_topology_destroy hwloc_topology_init hwloc_topology_load
 
-		  hwloc_topology_get_depth hwloc_get_type_depth hwloc_get_depth_type
-		  hwloc_get_nbobjs_by_depth hwloc_get_nbobjs_by_type
-		  hwloc_topology_is_thissystem
+		hwloc_topology_ignore_type hwloc_topology_ignore_type_keep_structure hwloc_topology_ignore_all_keep_structure
+		hwloc_topology_set_flags hwloc_topology_set_fsroot hwloc_topology_set_synthetic hwloc_topology_set_xml
 
-		  hwloc_get_obj_by_depth hwloc_get_obj_by_type
+		hwloc_topology_export_xml
 
-		  hwloc_obj_type_string hwloc_obj_type_of_string
-		  hwloc_obj_cpuset_sprintf
-		  hwloc_obj_sprintf
+		hwloc_topology_get_depth hwloc_get_type_depth hwloc_get_depth_type
+		hwloc_get_nbobjs_by_depth hwloc_get_nbobjs_by_type
+		hwloc_topology_is_thissystem
 
-		  hwloc_get_type_or_below_depth hwloc_get_type_or_above_depth
-                  hwloc_get_next_obj_by_depth hwloc_get_next_obj_by_type
-		  hwloc_get_next_child
-		  hwloc_get_common_ancestor_obj hwloc_obj_is_in_subtree
+		hwloc_get_obj_by_depth hwloc_get_obj_by_type
 
-		  hwloc_compare_objects
-                 );
+		hwloc_obj_type_string hwloc_obj_type_of_string
+		hwloc_obj_cpuset_sprintf
+		hwloc_obj_sprintf
 
-{
+		hwloc_get_type_or_below_depth hwloc_get_type_or_above_depth
+		hwloc_get_next_obj_by_depth hwloc_get_next_obj_by_type
+		hwloc_get_next_child
+		hwloc_get_common_ancestor_obj hwloc_obj_is_in_subtree
+
+		hwloc_compare_objects
+	       );
 
   if(! HWLOC_XSAPI_VERSION()) {
-    foreach(qw(
-	       HWLOC_OBJ_PROC
+    push @EXPORT, qw(
+		     HWLOC_OBJ_PROC
+		     hwloc_get_system_obj
+		    );
+  } else {
+    push @EXPORT, qw(
+		     HWLOC_OBJ_GROUP
+		     HWLOC_OBJ_PU
 
-	       hwloc_get_system_obj
-	      )) {
-      push @EXPORT, $_;
-    }
-  }
+		     hwloc_topology_set_pid
+		     hwloc_topology_get_support
+		     hwloc_obj_type_sprintf
+		     hwloc_obj_attr_sprintf
+		     hwloc_get_root_obj
+		     hwloc_get_ancestor_obj_by_depth
+		     hwloc_get_ancestor_obj_by_type
+		     hwloc_get_pu_obj_by_os_index
+		    );
 
-  else {
-
-    foreach(qw(
-	       HWLOC_OBJ_GROUP
-	       HWLOC_OBJ_PU
-
-	       hwloc_topology_set_pid
-	       hwloc_topology_get_support
-	       hwloc_obj_type_sprintf
-	       hwloc_obj_attr_sprintf
-	       hwloc_get_root_obj
-	       hwloc_get_ancestor_obj_by_depth
-	       hwloc_get_ancestor_obj_by_type
-	       hwloc_get_pu_obj_by_os_index
-
-	       hwloc_topology_get_complete_cpuset hwloc_topology_get_topology_cpuset
-	       hwloc_topology_get_online_cpuset hwloc_topology_get_allowed_cpuset
-	      )) {
-      push @EXPORT, $_;
+    if(HWLOC_XSAPI_VERSION() > 0x00010000) {
+      push @EXPORT, qw(
+		       hwloc_obj_get_info_by_name
+		      );
     }
 
   }
+
+  # --
+  # Cpuset API and helpers
+  # --
 
   if(HWLOC_XSAPI_VERSION() <= 0x00010000) {
-    foreach(qw(
-	       hwloc_cpuset_alloc hwloc_cpuset_dup hwloc_cpuset_free
+    $EXPORT_TAGS{cpuset} = [qw(
+			       hwloc_cpuset_alloc hwloc_cpuset_dup hwloc_cpuset_free
+			       hwloc_cpuset_all_but_cpu hwloc_cpuset_clr
+			       hwloc_cpuset_copy hwloc_cpuset_cpu hwloc_cpuset_fill
+			       hwloc_cpuset_from_ith_ulong hwloc_cpuset_from_string
+			       hwloc_cpuset_from_ulong hwloc_cpuset_set hwloc_cpuset_set_range
+			       hwloc_cpuset_singlify hwloc_cpuset_zero
+			       hwloc_cpuset_first hwloc_cpuset_last hwloc_cpuset_ids
+			       hwloc_cpuset_sprintf hwloc_cpuset_to_ith_ulong hwloc_cpuset_to_ulong
+			       hwloc_cpuset_weight
+			       hwloc_cpuset_includes hwloc_cpuset_intersects hwloc_cpuset_isequal
+			       hwloc_cpuset_isfull hwloc_cpuset_isincluded
+			       hwloc_cpuset_isset hwloc_cpuset_iszero
 
-	       hwloc_cpuset_all_but_cpu hwloc_cpuset_clr
-	       hwloc_cpuset_copy hwloc_cpuset_cpu hwloc_cpuset_fill
-	       hwloc_cpuset_from_ith_ulong hwloc_cpuset_from_string
-	       hwloc_cpuset_from_ulong hwloc_cpuset_set hwloc_cpuset_set_range
-	       hwloc_cpuset_singlify hwloc_cpuset_zero
-
-	       hwloc_cpuset_first hwloc_cpuset_last hwloc_cpuset_ids
-	       hwloc_cpuset_sprintf hwloc_cpuset_to_ith_ulong hwloc_cpuset_to_ulong
-	       hwloc_cpuset_weight
-
-	       hwloc_cpuset_includes hwloc_cpuset_intersects hwloc_cpuset_isequal
-	       hwloc_cpuset_isfull hwloc_cpuset_isincluded
-	       hwloc_cpuset_isset hwloc_cpuset_iszero
-
-	       hwloc_cpuset_sprintf_list
-	      )) {
-      push @EXPORT, $_;
-    }
+			       hwloc_cpuset_sprintf_list
+			      )];
 
     if(! HWLOC_XSAPI_VERSION()) {
-      foreach(qw(
-		 hwloc_cpuset_andset hwloc_cpuset_orset hwloc_cpuset_xorset
-		 hwloc_cpuset_compar hwloc_cpuset_compar_first
-		)) {
-	push @EXPORT, $_;
-      }
+      push @{$EXPORT_TAGS{cpuset}}, qw(
+				       hwloc_cpuset_andset hwloc_cpuset_orset hwloc_cpuset_xorset
+				       hwloc_cpuset_compar hwloc_cpuset_compar_first
+				      );
     } else {
-      foreach(qw(
-		 hwloc_cpuset_clr_range
-		 hwloc_cpuset_and hwloc_cpuset_andnot hwloc_cpuset_not
-		 hwloc_cpuset_or hwloc_cpuset_xor
-		 hwloc_cpuset_next
-		 hwloc_cpuset_compare hwloc_cpuset_compare_first
-		 hwloc_cpuset_from_liststring
-		)) {
-	push @EXPORT, $_;
-      }
+      push @{$EXPORT_TAGS{cpuset}}, qw(
+				       hwloc_cpuset_clr_range
+				       hwloc_cpuset_and hwloc_cpuset_andnot hwloc_cpuset_not
+				       hwloc_cpuset_or hwloc_cpuset_xor
+				       hwloc_cpuset_next
+				       hwloc_cpuset_compare hwloc_cpuset_compare_first
+				       hwloc_cpuset_from_liststring
+
+				       hwloc_topology_get_complete_cpuset hwloc_topology_get_topology_cpuset
+				       hwloc_topology_get_online_cpuset hwloc_topology_get_allowed_cpuset
+				      );
     }
+
+    $EXPORT_TAGS{bitmap} = [];
+
   }
 
+  # --
+  # Bitmap API and helpers
+  # --
+
   else {
-    foreach(qw(
-	       hwloc_obj_get_info_by_name
 
-	       hwloc_bitmap_alloc hwloc_bitmap_alloc_full hwloc_bitmap_dup hwloc_bitmap_free
+    $EXPORT_TAGS{cpuset} = [];
 
-	       hwloc_bitmap_fill hwloc_bitmap_singlify hwloc_bitmap_zero
-	       hwloc_bitmap_allbut hwloc_bitmap_clr hwloc_bitmap_only hwloc_bitmap_set
-	       hwloc_bitmap_clr_range hwloc_bitmap_set_range
-	       hwloc_bitmap_copy
-	       hwloc_bitmap_from_ith_ulong hwloc_bitmap_set_ith_ulong hwloc_bitmap_sscanf hwloc_bitmap_from_ulong
-	       hwloc_bitmap_and hwloc_bitmap_andnot hwloc_bitmap_or hwloc_bitmap_xor hwloc_bitmap_not
-	       hwloc_bitmap_first hwloc_bitmap_last hwloc_bitmap_next hwloc_bitmap_ids
-	       hwloc_bitmap_sprintf hwloc_bitmap_to_ith_ulong hwloc_bitmap_to_ulong hwloc_bitmap_weight
-	       hwloc_bitmap_compare hwloc_bitmap_isequal hwloc_bitmap_compare_first hwloc_bitmap_intersects
-	       hwloc_bitmap_isincluded hwloc_bitmap_includes
-	       hwloc_bitmap_isfull hwloc_bitmap_iszero hwloc_bitmap_isset
-               hwloc_bitmap_taskset_sscanf hwloc_bitmap_taskset_sprintf
+    $EXPORT_TAGS{bitmap} = [qw(
+			       hwloc_bitmap_alloc hwloc_bitmap_alloc_full hwloc_bitmap_dup hwloc_bitmap_free
+			       hwloc_bitmap_fill hwloc_bitmap_singlify hwloc_bitmap_zero
+			       hwloc_bitmap_allbut hwloc_bitmap_clr hwloc_bitmap_only hwloc_bitmap_set
+			       hwloc_bitmap_clr_range hwloc_bitmap_set_range
+			       hwloc_bitmap_copy
+			       hwloc_bitmap_from_ith_ulong hwloc_bitmap_set_ith_ulong hwloc_bitmap_sscanf hwloc_bitmap_from_ulong
+			       hwloc_bitmap_and hwloc_bitmap_andnot hwloc_bitmap_or hwloc_bitmap_xor hwloc_bitmap_not
+			       hwloc_bitmap_first hwloc_bitmap_last hwloc_bitmap_next hwloc_bitmap_ids
+			       hwloc_bitmap_sprintf hwloc_bitmap_to_ith_ulong hwloc_bitmap_to_ulong hwloc_bitmap_weight
+			       hwloc_bitmap_compare hwloc_bitmap_isequal hwloc_bitmap_compare_first hwloc_bitmap_intersects
+			       hwloc_bitmap_isincluded hwloc_bitmap_includes
+			       hwloc_bitmap_isfull hwloc_bitmap_iszero hwloc_bitmap_isset
+			       hwloc_bitmap_taskset_sscanf hwloc_bitmap_taskset_sprintf
 
-	       hwloc_bitmap_sprintf_list hwloc_bitmap_sscanf_list
+			       hwloc_bitmap_sprintf_list hwloc_bitmap_sscanf_list
 
-	       hwloc_cpuset_to_nodeset hwloc_cpuset_to_nodeset_strict
-	       hwloc_cpuset_from_nodeset hwloc_cpuset_from_nodeset_strict
+			       hwloc_topology_get_complete_cpuset hwloc_topology_get_topology_cpuset
+			       hwloc_topology_get_online_cpuset hwloc_topology_get_allowed_cpuset
 
-	       hwloc_topology_get_complete_nodeset
-	       hwloc_topology_get_topology_nodeset
-	       hwloc_topology_get_allowed_nodeset
-	      )) {
-      push @EXPORT, $_;
+			       hwloc_topology_get_complete_nodeset hwloc_topology_get_topology_nodeset
+			       hwloc_topology_get_allowed_nodeset
+
+			       hwloc_cpuset_to_nodeset hwloc_cpuset_to_nodeset_strict
+			       hwloc_cpuset_from_nodeset hwloc_cpuset_from_nodeset_strict
+			      )];
+
+  }
+
+  Exporter::export_ok_tags('cpuset');
+  Exporter::export_ok_tags('bitmap');
+
+  # --
+  # Binding API
+  # --
+
+  $EXPORT_TAGS{binding} = [qw(
+			      HWLOC_CPUBIND_PROCESS
+			      HWLOC_CPUBIND_THREAD
+			      HWLOC_CPUBIND_STRICT
+
+			      hwloc_set_cpubind hwloc_set_proc_cpubind
+			     )];
+
+  if(HWLOC_XSAPI_VERSION()) {
+    push @{$EXPORT_TAGS{binding}}, qw(
+				      hwloc_get_cpubind hwloc_get_proc_cpubind
+				     );
+  }
+  if(HWLOC_XSAPI_VERSION() > 0x00010000) {
+    push @{$EXPORT_TAGS{binding}}, qw(
+				      HWLOC_CPUBIND_NOMEMBIND
+
+				      HWLOC_MEMBIND_PROCESS
+				      HWLOC_MEMBIND_THREAD
+				      HWLOC_MEMBIND_STRICT
+				      HWLOC_MEMBIND_MIGRATE
+				      HWLOC_MEMBIND_NOCPUBIND
+				      HWLOC_MEMBIND_DEFAULT
+				      HWLOC_MEMBIND_FIRSTTOUCH
+				      HWLOC_MEMBIND_BIND
+				      HWLOC_MEMBIND_INTERLEAVE
+				      HWLOC_MEMBIND_REPLICATE
+				      HWLOC_MEMBIND_NEXTTOUCH
+
+				      hwloc_set_membind hwloc_set_membind_nodeset
+				      hwloc_set_proc_membind hwloc_set_proc_membind_nodeset
+				      hwloc_get_membind hwloc_get_membind_nodeset
+				      hwloc_get_proc_membind hwloc_get_proc_membind_nodeset
+				     );
+  }
+
+  Exporter::export_ok_tags('binding');
+
+  # --
+  # Bootstrap
+  # --
+
+  require XSLoader;
+  XSLoader::load('Sys::Hwloc', $VERSION);
+
+  # --
+  # Check compile-time API version against run-time API version
+  # --
+
+  my $runtime_version = hwloc_get_api_version();
+  if(defined $runtime_version) {
+    if(HWLOC_XSAPI_VERSION() != $runtime_version) {
+      warn sprintf("Warning: Sys::Hwloc compiled against libhwloc API version %#010x, but runtime libhwloc API version is %#010x\n",
+		   HWLOC_XSAPI_VERSION(), $runtime_version);
     }
+  } else {
+#    warn sprintf("Warning: Sys::Hwloc compiled against libhwloc API version %#010x, but runtime libhwloc API version cannot be determined\n",
+#		 HWLOC_XSAPI_VERSION());
   }
 
 }
 
-our $VERSION = '0.06';
-
 sub AUTOLOAD {
-  # This AUTOLOAD is used to 'autoload' constants from the constant()
-  # XS function.
+  # This AUTOLOAD is used to 'autoload' constants from the constant() XS function.
 
   my $constname;
   our $AUTOLOAD;
   ($constname = $AUTOLOAD) =~ s/.*:://;
-  croak "&Hwloc::constant not defined" if $constname eq 'constant';
+  croak "&Sys::Hwloc::constant not defined" if $constname eq 'constant';
   my ($error, $val) = constant($constname);
   if ($error) { croak $error; }
   {
@@ -201,13 +272,7 @@ sub AUTOLOAD {
   goto &$AUTOLOAD;
 }
 
-require XSLoader;
-XSLoader::load('Sys::Hwloc', $VERSION);
-
 # Preloaded methods go here.
-
-sub HWLOC_API_VERSION   { @HWLOC_API_VERSION@ }
-sub HWLOC_XSAPI_VERSION { HWLOC_API_VERSION() ? HWLOC_API_VERSION() : 0 }
 
 # Autoload methods go after =cut, and are processed by the autosplit program.
 
@@ -289,16 +354,40 @@ or going the OO-ish way:
 
 =head1 DESCRIPTION
 
-The Hwloc module provides a Perl wrapper API around the Portable Hardware Locality (hwloc) C API.
+The Sys::Hwloc module provides a Perl wrapper API around the Portable Hardware Locality (hwloc) C API.
 
 Visit L<http://www.open-mpi.org/projects/hwloc> for information about hwloc.
 
 The module provides access to the functions of the hwloc API as well
 as an object-oriented interface to I<hwloc_topology>, I<hwloc_obj> and I<hwloc_cpuset> objects.
 
+=head1 EXPORT/IMPORT
+
+The Sys::Hwloc module exports constants and functions of the hwloc core ABI and basic helpers by default.
+To import these, load the module with one of the following:
+
+       use Sys::Hwloc;
+       use Sys::Hwloc qw(:DEFAULT);
+
+Names of constants and functions belonging to the Cpuset API, the Bitmap API and the Binding API have to be
+imported explicitely.
+
+Examples:
+
+       use Sys::Hwloc qw(:DEFAULT :cpuset);
+       use Sys::Hwloc qw(:DEFAULT :bitmap :binding);
+
+To get a list of what is exported by default, type:
+
+   perl -MSys::Hwloc -MData::Dumper -e 'print Dumper(\@Sys::Hwloc::EXPORT)'
+
+To get a list of optional symbols, type:
+
+   perl -MSys::Hwloc -MData::Dumper -e 'print Dumper(\%Sys::Hwloc::EXPORT_TAGS)'
+
 =head1 CONSTANTS
 
-The following constants are exported by the Hwloc module:
+The following constants are exported by the Sys::Hwloc module:
 
 =head2 Type of topology objects
 
@@ -311,7 +400,6 @@ The following constants are exported by the Hwloc module:
        HWLOC_OBJ_PU                                       since  hwloc-1.0
        HWLOC_OBJ_GROUP                                    since  hwloc-1.0
        HWLOC_OBJ_MISC
-
 
 =head2 Topology flags
 
@@ -329,7 +417,7 @@ The following constants are exported by the Hwloc module:
 
 =head1 METHODS
 
-The exported methods are listed below.
+The following methods are exported by default.
 
 Each listing contains the methods that conform to the hwloc C API,
 and the corresponding Hwloc perl API OO-ish methods, if implemented.
@@ -364,10 +452,10 @@ and the corresponding Hwloc perl API OO-ish methods, if implemented.
        $rc   = $t->ignore_all_keep_structure
        $rc   = $t->set_flags($flags)
        $rc   = $t->set_fsroot($path)
-       $rc   = $t->set_pid($pid)
+       $rc   = $t->set_pid($pid)                                 since  hwloc-1.0
        $rc   = $t->set_synthetic($string)
        $rc   = $t->set_xml($path)
-       $href = $t->get_support
+       $href = $t->get_support                                   since  hwloc-1.0
 
 =head2 Tinker with topologies
 
@@ -485,33 +573,16 @@ and the corresponding Hwloc perl API OO-ish methods, if implemented.
        $rc   = $t->compare_objects($obj1,$obj2)                  not in hwloc
        $rc   = $obj->is_same_obj($obj)                           not in hwloc
 
-=head2 Cpuset and Nodeset helpers
+=head1 CPUSET API (before hwloc-1.1)
 
-       $set  = hwloc_topology_get_complete_cpuset($t)            since  hwloc-1.0
-       $set  = hwloc_topology_get_topology_cpuset($t)            since  hwloc-1.0
-       $set  = hwloc_topology_get_online_cpuset($t)              since  hwloc-1.0
-       $set  = hwloc_topology_get_allowed_cpuset($t)             since  hwloc-1.0
-       $set  = hwloc_topology_get_complete_nodeset($t)           since  hwloc-1.1
-       $set  = hwloc_topology_get_topology_nodeset($t)           since  hwloc-1.1
-       $set  = hwloc_topology_get_allowed_nodeset($t)            since  hwloc-1.1
-       hwloc_cpuset_to_nodeset($t,$cpuset,$nodeset)              since  hwloc-1.1
-       hwloc_cpuset_to_nodeset_strict($t,$cpuset,$nodeset)       since  hwloc-1.1
-       hwloc_cpuset_from_nodeset($t,$cpuset,$nodeset)            since  hwloc-1.1
-       hwloc_cpuset_from_nodeset_strict($t,$cpuset,$nodeset)     since  hwloc-1.1
+The hwloc C API of hwloc-0.9 and 1.0 defines the B<Cpuset API>.
 
-       $set  = $t->get_complete_cpuset                           since  hwloc-1.0
-       $set  = $t->get_topology_cpuset                           since  hwloc-1.0
-       $set  = $t->get_online_cpuset                             since  hwloc-1.0
-       $set  = $t->get_allowed_cpuset                            since  hwloc-1.0
-       $set  = $t->get_complete_nodeset                          since  hwloc-1.1
-       $set  = $t->get_topology_nodeset                          since  hwloc-1.1
-       $set  = $t->get_allowed_nodeset                           since  hwloc-1.1
-       $t->cpuset_to_nodeset($cpuset,$nodeset)                   since  hwloc-1.1
-       $t->cpuset_to_nodeset_strict($cpuset,$nodeset)            since  hwloc-1.1
-       $t->cpuset_from_nodeset($cpuset,$nodeset)                 since  hwloc-1.1
-       $t->cpuset_from_nodeset_strict($cpuset,$nodeset)          since  hwloc-1.1
+The Sys::Hwloc module exports the corresponding methods and some utility functions, when
+requested with
 
-=head2 Cpuset API (before hwloc-1.1)
+       use Sys::Hwloc qw(:DEFAULT :cpuset);
+
+=head2 Cpuset API
 
        $set  = hwloc_cpuset_alloc
        $seta = hwloc_cpuset_dup($set)
@@ -607,7 +678,28 @@ and the corresponding Hwloc perl API OO-ish methods, if implemented.
        $rc   = $set->compare($seta)                              since  hwloc-1.0
        $rc   = $set->compare_first($seta)                        since  hwloc-1.0
 
-=head2 Bitmap API (since hwloc-1.1)
+=head2 Cpuset and Nodeset helpers
+
+       $set  = hwloc_topology_get_complete_cpuset($t)            since  hwloc-1.0
+       $set  = hwloc_topology_get_topology_cpuset($t)            since  hwloc-1.0
+       $set  = hwloc_topology_get_online_cpuset($t)              since  hwloc-1.0
+       $set  = hwloc_topology_get_allowed_cpuset($t)             since  hwloc-1.0
+
+       $set  = $t->get_complete_cpuset                           since  hwloc-1.0
+       $set  = $t->get_topology_cpuset                           since  hwloc-1.0
+       $set  = $t->get_online_cpuset                             since  hwloc-1.0
+       $set  = $t->get_allowed_cpuset                            since  hwloc-1.0
+
+=head1 BITMAP API (since hwloc-1.1)
+
+The hwloc C API since hwloc-1.1 defines the B<Bitmap API>, which replaces the B<Cpuset API>.
+
+The Sys::Hwloc module exports the corresponding methods and some utility functions, when
+requested with
+
+       use Sys::Hwloc qw(:DEFAULT :bitmap);
+
+=head2 Bitmap API
 
        $map  = hwloc_bitmap_alloc
        $map  = hwloc_bitmap_alloc_full
@@ -701,6 +793,95 @@ and the corresponding Hwloc perl API OO-ish methods, if implemented.
        $rc   = $map->compare($mapa)
        $rc   = $map->compare_first($mapa)
 
+=head2 Cpuset and Nodeset helpers
+
+       $set  = hwloc_topology_get_complete_cpuset($t)            since  hwloc-1.0
+       $set  = hwloc_topology_get_topology_cpuset($t)            since  hwloc-1.0
+       $set  = hwloc_topology_get_online_cpuset($t)              since  hwloc-1.0
+       $set  = hwloc_topology_get_allowed_cpuset($t)             since  hwloc-1.0
+       $set  = hwloc_topology_get_complete_nodeset($t)           since  hwloc-1.1
+       $set  = hwloc_topology_get_topology_nodeset($t)           since  hwloc-1.1
+       $set  = hwloc_topology_get_allowed_nodeset($t)            since  hwloc-1.1
+       hwloc_cpuset_to_nodeset($t,$cpuset,$nodeset)              since  hwloc-1.1
+       hwloc_cpuset_to_nodeset_strict($t,$cpuset,$nodeset)       since  hwloc-1.1
+       hwloc_cpuset_from_nodeset($t,$cpuset,$nodeset)            since  hwloc-1.1
+       hwloc_cpuset_from_nodeset_strict($t,$cpuset,$nodeset)     since  hwloc-1.1
+
+       $set  = $t->get_complete_cpuset                           since  hwloc-1.0
+       $set  = $t->get_topology_cpuset                           since  hwloc-1.0
+       $set  = $t->get_online_cpuset                             since  hwloc-1.0
+       $set  = $t->get_allowed_cpuset                            since  hwloc-1.0
+       $set  = $t->get_complete_nodeset                          since  hwloc-1.1
+       $set  = $t->get_topology_nodeset                          since  hwloc-1.1
+       $set  = $t->get_allowed_nodeset                           since  hwloc-1.1
+       $t->cpuset_to_nodeset($cpuset,$nodeset)                   since  hwloc-1.1
+       $t->cpuset_to_nodeset_strict($cpuset,$nodeset)            since  hwloc-1.1
+       $t->cpuset_from_nodeset($cpuset,$nodeset)                 since  hwloc-1.1
+       $t->cpuset_from_nodeset_strict($cpuset,$nodeset)          since  hwloc-1.1
+
+=head1 BINDING API
+
+The hwloc C API provides constants and functions to bind processes or threads
+to cpusets or nodesets.
+
+The Sys::Hwloc module exports the corresponding constants and methods, when
+requested with
+
+       use Sys::Hwloc qw(:DEFAULT :binding);
+
+It is required to import Cpuset or Bitmap API functions in addition, when
+cpusets or nodesets have to be created or manipulated with the classic (not OO) interface.
+
+=head2 CPU binding
+
+       HWLOC_CPUBIND_PROCESS
+       HWLOC_CPUBIND_THREAD
+       HWLOC_CPUBIND_STRICT
+       HWLOC_CPUBIND_NOMEMBIND                                   since  hwloc-1.1
+
+       $rc   = hwloc_set_cpubind($t,$set,$flags)
+       $rc   = hwloc_get_cpubind($t,$set,$flags)                 since  hwloc-1.0
+       $rc   = hwloc_set_proc_cpubind($t,$pid,$set,$flags)
+       $rc   = hwloc_get_proc_cpubind($t,$set,$pid,$flags)       since  hwloc-1.0
+
+       $rc   = $t->set_cpubind($set,$flags)
+       $rc   = $t->set_proc_cpubind($pid,$set,$flags)
+       $rc   = $t->get_cpubind($set,$flags)                      since  hwloc-1.0
+       $rc   = $t->get_proc_cpubind($pid,$set,$flags)            since  hwloc-1.0
+
+=head2 Memory binding (since hwloc-1.1)
+
+       HWLOC_MEMBIND_PROCESS
+       HWLOC_MEMBIND_THREAD
+       HWLOC_MEMBIND_STRICT
+       HWLOC_MEMBIND_MIGRATE
+       HWLOC_MEMBIND_NOCPUBIND
+
+       HWLOC_MEMBIND_DEFAULT
+       HWLOC_MEMBIND_FIRSTTOUCH
+       HWLOC_MEMBIND_BIND
+       HWLOC_MEMBIND_INTERLEAVE
+       HWLOC_MEMBIND_REPLICATE
+       HWLOC_MEMBIND_NEXTTOUCH
+
+       $rc   = hwloc_set_membind($t,$set,$policy,$flags)
+       $rc   = hwloc_set_membind_nodeset($t,$set,$policy,$flags)
+       $rc   = hwloc_set_proc_membind($t,$pid,$set,$policy,$flags)
+       $rc   = hwloc_set_proc_membind_nodeset($t,$pid,$set,$policy,$flags)
+       $rc   = hwloc_get_membind($t,$set,\$policy,$flags)
+       $rc   = hwloc_get_membind_nodeset($t,$set,\$policy,$flags)
+       $rc   = hwloc_get_proc_membind($t,$pid,$set,\$policy,$flags)
+       $rc   = hwloc_get_proc_membind_nodeset($t,$pid,$set,\$policy,$flags)
+
+       $rc   = $t->set_membind($set,$policy,$flags)
+       $rc   = $t->set_membind_nodeset($set,$policy,$flags)
+       $rc   = $t->set_proc_membind($pid,$set,$policy,$flags)
+       $rc   = $t->set_proc_membind_nodeset($pid,$set,$policy,$flags)
+       $rc   = $t->get_membind($set,\$policy,$flags)
+       $rc   = $t->get_membind_nodeset($set,\$policy,$flags)
+       $rc   = $t->get_proc_membind($pid,$set,\$policy,$flags)
+       $rc   = $t->get_proc_membind_nodeset($pid,$set,\$policy,$flags)
+
 =head1 IMPLEMENTATION SPECIFICS
 
 =head2 Hwloc Version
@@ -793,7 +974,7 @@ Data of type I<hwloc_cpuset> become created and manipulated with
 functions of the B<Cpuset API>.
 
 When build with these hwloc versions, the Sys::Hwloc module exports
-the functions of the Cpuset API, blesses these data into the
+the functions of the Cpuset API on request, blesses these data into the
 namespace L<Sys::Hwloc::Cpuset>, and provides OO-ish methods for them.
 The namespace Sys::Hwloc::Bitmap does not exist.
 
@@ -803,13 +984,15 @@ Both C types are aliases of the C type I<hwloc_bitmap>. These
 data become created and manipulated with functions of the B<Bitmap API>.
 
 When built with these hwloc versions, the Sys::Hwloc module
-exports the functions of the Bitmap API, blesses these data
+exports the functions of the Bitmap API on request, blesses these data
 into the namespace L<Sys::Hwloc::Bitmap>, and provides OO-ish
 methods for them. A distrinction between the C types I<hwloc_cpuset>
 and I<hwloc_nodeset> is not made. The namespace Sys::Hwloc::Cpuset
 does not exist.
 
 Example:
+
+  use Sys::Hwloc qw(:DEFAULT :cpuset :bitmap);
 
   if(HWLOC_XSAPI_VERSION() <= 0x00010000) {
     $set = hwloc_cpuset_alloc();

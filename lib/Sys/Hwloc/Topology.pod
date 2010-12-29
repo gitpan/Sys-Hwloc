@@ -44,6 +44,20 @@ Sys::Hwloc::Topology - Class representing a hwloc topology context
 
        $string = $topology->sprintf_obj( $obj, $prefix, $verbose );
 
+       $rc     = $topology->set_cpubind( $set, $flags );
+       $rc     = $topology->set_proc_cpubind( $pid, $set, $flags );
+       $rc     = $topology->get_cpubind( $set, $flags );
+       $rc     = $topology->get_proc_cpubind( $pid, $set, $flags);
+
+       $rc     = $topology->set_membind( $set, $policy, $flags );
+       $rc     = $topology->set_membind_nodeset( $set, $policy, $flags );
+       $rc     = $topology->set_proc_membind( $pid, $set, $policy, $flags );
+       $rc     = $topology->set_proc_membind_nodeset( $pid, $set, $policy, $flags );
+       $rc     = $topology->get_membind( $set, \$policy, $flags );
+       $rc     = $topology->get_membind_nodeset( $set, \$policy, $flags );
+       $rc     = $topology->get_proc_membind( $pid, $set, \$policy, $flags );
+       $rc     = $topology->get_proc_membind_nodeset( $pid, $set, \$policy, $flags );
+
        $set    = $topology->get_complete_cpuset;
        $set    = $topology->get_topology_cpuset;
        $set    = $topology->get_online_cpuset;
@@ -67,13 +81,13 @@ for hwloc C functions that act on topology contexts. In particular,
 every hwloc C function that gets a I<hwloc_topology> pointer as first argument
 has an OO-ish counterpart in Sys::Hwloc::Topology.
 
-A Sys::Hwloc::Topology instance is created with B<hwloc_topology_init>() or
-B<Sys::Hwloc::Topology-E<gt>init>().
+A Sys::Hwloc::Topology instance is created with B<hwloc_topology_init()> or
+B<Sys::Hwloc::Topology-E<gt>init()>.
 
-The topology context is built with B<hwloc_topology_load>($topology) or B<$topology-E<gt>load>().
+The topology context is built with B<hwloc_topology_load>($topology) or B<$topology-E<gt>load()>.
 
-The underlying C data must become freed with B<hwloc_topology_destroy>($topology) or
-B<$topology-E<gt>destroy>().
+The underlying C data must become freed with B<hwloc_topology_destroy($topology)> or
+B<$topology-E<gt>destroy()>.
 
 =head1 METHODS
 
@@ -151,7 +165,7 @@ Comparison is done by comparing the underlying raw I<hwloc_obj_t> pointer values
 
   $string = $topology->sprintf_obj( $obj, $prefix, $verbose );
 
-This method is an alias of B<Sys::Hwloc::hwloc_obj_sprintf>().
+This method is an alias of B<Sys::Hwloc::hwloc_obj_sprintf($prefix,$verbose)>.
 
 It returns a string that represents a given topology object in human-readable form.
 

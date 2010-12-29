@@ -8,7 +8,7 @@ See http://www.open-mpi.org/projects/hwloc/ for details.
 DEPENDENCIES
 ------------
 
-This module requires hwloc >= 0.9.
+This module requires hwloc >= 0.9 (recommended: >= 1.1)
 
 Makefile.PL uses ExtUtils::MakeMaker and ExtUtils::Constant
 to create the Makefile.
@@ -88,8 +88,7 @@ XML SUPPORT
 -----------
 
 The configure step tries to figure out if the hwloc library was
-built with XML support. Checking is done by executing the lstopo
-command and trying to produce an XML output.
+built with XML support.
 
 Depending on the result, Hwloc functions dealing with XML
 are compiled and exported or not, and the special constant
@@ -146,7 +145,6 @@ if other versions are used and the hwloc C API behaves differently.
 TODO
 ----
 
-- implement binding API
 - extend XML support by using XML::LibXML
 
 

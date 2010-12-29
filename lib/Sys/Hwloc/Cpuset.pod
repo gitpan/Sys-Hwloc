@@ -68,11 +68,11 @@ for hwloc C functions that act on cpuset and nodeset objects. In particular,
 every hwloc C function that gets a I<hwloc_cpuset> pointer as first argument
 has an OO-ish counterpart in Sys::Hwloc::Cpuset.
 
-A Sys::Hwloc::Cpuset instance is created with B<hwloc_cpuset_alloc>() or
-B<Sys::Hwloc::Cpuset-E<gt>alloc>().
+A Sys::Hwloc::Cpuset instance is created with B<hwloc_cpuset_alloc()> or
+B<Sys::Hwloc::Cpuset-E<gt>alloc()>.
 
-The underlying C data must become freed with B<hwloc_cpuset_free>() or
-B<$cpuset-E<gt>free>().
+The underlying C data must become freed with B<hwloc_cpuset_free()> or
+B<$cpuset-E<gt>free()>.
 
 =head1 METHODS
 

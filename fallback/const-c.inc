@@ -53,6 +53,38 @@ constant_14 (pTHX_ const char *name, IV *iv_return) {
 }
 
 static int
+constant_20 (pTHX_ const char *name, IV *iv_return) {
+  /* When generated this function returned values for the list of names given
+     here.  However, subsequent manual editing may have added or removed some.
+     HWLOC_CPUBIND_STRICT HWLOC_CPUBIND_THREAD HWLOC_TYPE_UNORDERED */
+  /* Offset 14 gives the best switch position.  */
+  switch (name[14]) {
+  case 'R':
+    if (memEQ(name, "HWLOC_TYPE_UNORDERED", 20)) {
+    /*                             ^            */
+      *iv_return = HWLOC_TYPE_UNORDERED;
+      return PERL_constant_ISIV;
+    }
+    break;
+  case 'S':
+    if (memEQ(name, "HWLOC_CPUBIND_STRICT", 20)) {
+    /*                             ^            */
+      *iv_return = HWLOC_CPUBIND_STRICT;
+      return PERL_constant_ISIV;
+    }
+    break;
+  case 'T':
+    if (memEQ(name, "HWLOC_CPUBIND_THREAD", 20)) {
+    /*                             ^            */
+      *iv_return = HWLOC_CPUBIND_THREAD;
+      return PERL_constant_ISIV;
+    }
+    break;
+  }
+  return PERL_constant_NOTFOUND;
+}
+
+static int
 constant (pTHX_ const char *name, STRLEN len, IV *iv_return) {
   /* Initially switch on the length of the name.  */
   /* When generated this function returned values for the list of names given
@@ -70,6 +102,9 @@ use ExtUtils::Constant qw (constant_types C_constant XS_constant);
 
 my $types = {map {($_, 1)} qw(IV)};
 my @names = (qw(),
+            {name=>"HWLOC_CPUBIND_PROCESS", type=>"IV", macro=>"1"},
+            {name=>"HWLOC_CPUBIND_STRICT", type=>"IV", macro=>"1"},
+            {name=>"HWLOC_CPUBIND_THREAD", type=>"IV", macro=>"1"},
             {name=>"HWLOC_HAS_XML", type=>"IV", macro=>"1"},
             {name=>"HWLOC_OBJ_CACHE", type=>"IV", macro=>"1"},
             {name=>"HWLOC_OBJ_CORE", type=>"IV", macro=>"1"},
@@ -86,12 +121,12 @@ my @names = (qw(),
             {name=>"HWLOC_TYPE_DEPTH_UNKNOWN", type=>"IV", macro=>"1"},
             {name=>"HWLOC_TYPE_UNORDERED", type=>"IV", macro=>"1"});
 
-print constant_types(), "\n"; # macro defs
-foreach (C_constant ("Hwloc", 'constant', 'IV', $types, undef, 3, @names) ) {
+print constant_types(); # macro defs
+foreach (C_constant ("Sys::Hwloc", 'constant', 'IV', $types, undef, 3, @names) ) {
     print $_, "\n"; # C constant subs
 }
-print "\n#### XS Section:\n";
-print XS_constant ("Hwloc", $types);
+print "#### XS Section:\n";
+print XS_constant ("Sys::Hwloc", $types);
 __END__
    */
 
@@ -160,8 +195,11 @@ __END__
     }
     break;
   case 20:
-    if (memEQ(name, "HWLOC_TYPE_UNORDERED", 20)) {
-      *iv_return = HWLOC_TYPE_UNORDERED;
+    return constant_20 (aTHX_ name, iv_return);
+    break;
+  case 21:
+    if (memEQ(name, "HWLOC_CPUBIND_PROCESS", 21)) {
+      *iv_return = HWLOC_CPUBIND_PROCESS;
       return PERL_constant_ISIV;
     }
     break;

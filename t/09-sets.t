@@ -12,13 +12,13 @@
 #
 # Do some high-level tests with cpusets of topology objects
 #
-# $Id: 09-sets.t,v 1.2 2010/12/22 16:25:09 bzbkalli Exp $
+# $Id: 09-sets.t,v 1.3 2010/12/29 16:15:21 bzbkalli Exp $
 #
 ################################################################################
 
 use Test::More 0.94;
 use strict;
-use Sys::Hwloc 0.05;
+use Sys::Hwloc 0.07 qw(:DEFAULT :cpuset :bitmap);
 
 plan tests => 6;
 

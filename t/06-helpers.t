@@ -12,7 +12,7 @@
 #
 # Test topology helpers with topology on this machine
 #
-# $Id: 06-helpers.t,v 1.9 2010/12/21 14:19:10 bzbkalli Exp $
+# $Id: 06-helpers.t,v 1.10 2010/12/28 18:19:02 bzbkalli Exp $
 #
 ################################################################################
 
@@ -22,7 +22,7 @@ use Sys::Hwloc 0.04;
 
 my $apiVersion = HWLOC_API_VERSION();
 my $proc_t     = $apiVersion ? HWLOC_OBJ_PU() : HWLOC_OBJ_PROC();
-my ($t, $o, $root, $rc, $nobjs, $depth, $test);
+my ($t, $o, $root, $rc, $nobjs, $depth, $test, %procs);
 
 # --
 # Init topology, stop testing if this fails
@@ -285,6 +285,7 @@ SKIP: {
 	  is($o->depth,         $depth-1, $test."->depth");
 	  is($o->logical_index, $i,       $test."->logical_index");
 	};
+	$procs{$i} = $o->os_index;
       } else {
 	fail("\%{$test}");
       }
@@ -313,10 +314,11 @@ SKIP: {
       $test = sprintf("hwloc_get_next_obj_by_type(%d) %d", $proc_t, $i);
       if(isa_ok($o, "Sys::Hwloc::Obj", $test)) {
 	subtest "\%{$test}" => sub {
-	  plan tests => 3;
-	  is($o->type,          $proc_t,  $test."->type");
-	  is($o->depth,         $depth-1, $test."->depth");
-	  is($o->logical_index, $i,       $test."->logical_index");
+	  plan tests => 4;
+	  is($o->type,          $proc_t,      $test."->type");
+	  is($o->depth,         $depth-1,     $test."->depth");
+	  is($o->logical_index, $i,           $test."->logical_index");
+	  is($procs{$i},        $o->os_index, $test."->os_index");
 	};
       } else {
 	fail("\%{$test}");
@@ -342,14 +344,14 @@ SKIP: {
     plan tests => $nobjs * 2;
 
     for(my $i = 0; $i < $nobjs; $i++) {
-      $test = sprintf("hwloc_get_pu_obj_by_os_index(%d)", $i);
-      $rc = $t->get_pu_obj_by_os_index($i);
+      $test = sprintf("hwloc_get_pu_obj_by_os_index(%d)", $procs{$i});
+      $rc = $t->get_pu_obj_by_os_index($procs{$i});
       if(isa_ok($rc, "Sys::Hwloc::Obj", $test)) {
 	subtest "\%{$test}" => sub {
 	  plan tests => 3;
-	  is($rc->type, $proc_t,   $test."->type");
-	  is($rc->depth, $depth-1, $test."->depth");
-	  is($rc->os_index, $i,    $test."->os_index");
+	  is($rc->type,     $proc_t,    $test."->type");
+	  is($rc->depth,    $depth-1,   $test."->depth");
+	  is($rc->os_index, $procs{$i}, $test."->os_index");
 	};
       } else {
 	fail("\%{$test}");
