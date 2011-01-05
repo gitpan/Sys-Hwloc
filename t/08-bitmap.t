@@ -12,22 +12,22 @@
 #
 # Test the Sys::Hwloc::Bitmap API (hwloc-1.1)
 #
-# $Id: 08-bitmap.t,v 1.6 2010/12/29 16:15:20 bzbkalli Exp $
+# $Id: 08-bitmap.t,v 1.8 2011/01/05 13:29:10 bzbkalli Exp $
 #
 ################################################################################
 
 use Test::More 0.94;
 use strict;
-use Sys::Hwloc 0.07 qw(:DEFAULT :bitmap);
+use Sys::Hwloc 0.08 qw(:DEFAULT :bitmap);
 
-plan tests => 114;
+plan tests => 122;
 
 my $apiVersion = HWLOC_XSAPI_VERSION();
 my ($set, $set0, $set1, $rc);
 
 SKIP: {
 
-  skip 'Sys::Hwloc::Bitmap', 114 if ($apiVersion < 0x00010100);
+  skip 'Sys::Hwloc::Bitmap', 122 if ($apiVersion < 0x00010100);
 
   # --
   # Init bitmap, stop testing if this fails
@@ -55,6 +55,8 @@ SKIP: {
   is($rc, -1, 'hwloc_bitmap_first(<new>)');
   $rc = hwloc_bitmap_last($set);
   is($rc, -1, 'hwloc_bitmap_last(<new>)');
+  $rc = hwloc_bitmap_weight($set);
+  is($rc, 0, 'hwloc_bitmap_weight(<new>)');
 
   # --
   # Fill set, check if full
@@ -65,12 +67,14 @@ SKIP: {
   is($rc, 0, 'hwloc_bitmap_fill() iszero');
   $rc = hwloc_bitmap_isfull($set);
   is($rc, 1, 'hwloc_bitmap_fill() isfull');
-  $rc =  hwloc_bitmap_to_ulong($set);
+  $rc = hwloc_bitmap_to_ulong($set);
   cmp_ok($rc, '>', 0, 'hwloc_bitmap_to_ulong(<full>)');
   $rc = hwloc_bitmap_sprintf($set);
   like($rc, qr/^0xf\.\.\.f$/i, 'hwloc_bitmap_sprintf(<full>)');
-  $rc =  hwloc_bitmap_to_ith_ulong($set,0);
+  $rc = hwloc_bitmap_to_ith_ulong($set,0);
   cmp_ok($rc, '>', 0, 'hwloc_bitmap_to_ith_ulong(<full>,0)');
+  $rc = hwloc_bitmap_weight($set);
+  is($rc, -1, 'hwloc_bitmap_weight(<full>)');
 
   # --
   # Zero out, check
@@ -111,6 +115,8 @@ SKIP: {
   is($rc, 0, 'hwloc_bitmap_first(<cpu0>)');
   $rc = hwloc_bitmap_last($set0);
   is($rc, 0, 'hwloc_bitmap_last(<cpu0>)');
+  $rc = hwloc_bitmap_weight($set0);
+  is($rc, 1, 'hwloc_bitmap_weight(<cpu0>)');
 
   # --
   # Duplicate set, reinit from int to set cpu1, check if set
@@ -171,6 +177,8 @@ SKIP: {
   is($rc, 1, 'hwloc_bitmap_isset(1 | 2,0)');
   $rc = hwloc_bitmap_isset($set,1);
   is($rc, 1, 'hwloc_bitmap_isset(1 | 2,1)');
+  $rc =  hwloc_bitmap_weight($set);
+  is($rc, 2, 'hwloc_bitmap_weight(1 | 2)');
 
   # --
   # Add cpu2, check
@@ -258,12 +266,12 @@ SKIP: {
   hwloc_bitmap_set_range($set,0,7);
   hwloc_bitmap_set_range($set,16,17);
   hwloc_bitmap_set_range($set,24,27);
-  my $str = hwloc_bitmap_sprintf_list($set);
-  is($str, '0-7,16,17,24-27', 'hwloc_bitmap_sprintf_list(0-7,16,17,24-27)');
+  my $str = hwloc_bitmap_list_sprintf($set);
+  is($str, '0-7,16,17,24-27', 'hwloc_bitmap_list_sprintf(0-7,16,17,24-27)');
 
-  hwloc_bitmap_sscanf_list($set0,$str);
+  hwloc_bitmap_list_sscanf($set0,$str);
   $rc = hwloc_bitmap_isequal($set,$set0);
-  is($rc, 1, "hwloc_bitmap_sscanf_list($str) eq '0-7,16,17,24-27'");
+  is($rc, 1, "hwloc_bitmap_list_sscanf($str) eq '0-7,16,17,24-27'");
 
   # --
   # Free bitmaps
@@ -303,6 +311,8 @@ SKIP: {
   is($rc, -1, 'newset->first');
   $rc = $set->last;
   is($rc, -1, 'newset->last');
+  $rc = $set->weight;
+  is($rc, 0, 'newset->weight');
 
   # --
   # Fill set, check if full
@@ -319,6 +329,8 @@ SKIP: {
   like($rc, qr/^0xf\.\.\.f$/i, 'fullset->sprintf');
   $rc = $set->to_ith_ulong(0);
   cmp_ok($rc, '>', 0, 'fullset->to_ith_ulong(0)');
+  $rc = $set->weight;
+  is($rc, -1, 'fullset->weight');
 
   # --
   # Zero out, check
@@ -359,6 +371,8 @@ SKIP: {
   is($rc, 0, 'cpu0set->first');
   $rc = $set0->last;
   is($rc, 0, 'cpu0set->last');
+  $rc = $set0->weight;
+  is($rc, 1, 'cpu0set->weight');
 
   # --
   # Duplicate set, reinit from int to set cpu1, check if set
@@ -419,6 +433,8 @@ SKIP: {
   is($rc, 1, '(1 | 2) -> isset(0)');
   $rc = $set->isset(1);
   is($rc, 1, '(1 | 2) -> isset(1)');
+  $rc = $set->weight;
+  is($rc, 2, '(1 | 2) -> weight');
 
   # --
   # Add cpu2, check

@@ -1,5 +1,14 @@
 Revision history for Perl extension Sys::Hwloc.
 
+0.08 2011/01/05
+      - bug fix prototype hwloc_get_next_child, added corresponding test
+      - prepared for upcoming availability of hwloc_bitmap_list_snprintf/sscanf
+        by renaming
+          hwloc_bitmap_sprintf_list -> hwloc_bitmap_list_sprintf
+          hwloc_bitmap_sscanf_list  -> hwloc_bitmap_list_sscanf
+        (internally still using our own implementation)
+      - added module "Finding Objects Inside a CPU set"
+
 0.07  2010/12/29
       - implemented CPU binding
       - implemented Memory binding

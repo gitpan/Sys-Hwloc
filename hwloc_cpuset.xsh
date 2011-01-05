@@ -1,7 +1,7 @@
 
  # -------------------------------------------------------------------
  # Cpuset API, see Sys::Hwloc::Cpuset for accessors
- # $Id: hwloc_cpuset.xsh,v 1.6 2010/12/21 19:44:16 bzbkalli Exp $
+ # $Id: hwloc_cpuset.xsh,v 1.9 2011/01/05 18:08:55 bzbkalli Exp $
  # -------------------------------------------------------------------
 
  # -- new/destroy
@@ -170,7 +170,7 @@ hwloc_cpuset_from_liststring(set,string)
     Sys::Hwloc::Cpuset::from_liststring = 1
   CODE:
     PERL_UNUSED_VAR(ix);
-    RETVAL = hwloc_cpuset_sscanf_list(set,string);
+    RETVAL = _hwloc_cpuset_list_sscanf(set,string);
   OUTPUT:
     RETVAL
 
@@ -333,22 +333,26 @@ hwloc_cpuset_sprintf(set)
     RETVAL
 
 
+#if HWLOC_XSAPI_VERSION
 SV *
-hwloc_cpuset_sprintf_list(set)
+hwloc_cpuset_list_sprintf(set)
   hwloc_cpuset_t set
   PROTOTYPE: $
   ALIAS:
-    Sys::Hwloc::Cpuset::sprintf_list = 1
+    Sys::Hwloc::Cpuset::sprintf_list      = 1
+    Sys::Hwloc::hwloc_cpuset_sprintf_list = 2
   PREINIT:
     int   rc;
   CODE:
     PERL_UNUSED_VAR(ix);
-    if((rc = hwloc_cpuset_snprintf_list(sbuf, sizeof(sbuf), set)) == -1)
+    if((rc = _hwloc_cpuset_list_snprintf(sbuf, sizeof(sbuf), set)) == -1)
       XSRETURN_UNDEF;
     else
       RETVAL = newSVpvn(sbuf,(STRLEN)rc);
   OUTPUT:
     RETVAL
+
+#endif
 
 
 unsigned long
@@ -541,4 +545,148 @@ hwloc_topology_get_complete_cpuset(topo)
     RETVAL
 
 #endif
+
+ # -------------------------------------------------------------------
+ # Finding objects inside cpusets
+ # -------------------------------------------------------------------
+
+unsigned
+hwloc_get_nbobjs_inside_cpuset_by_depth(topo,set,depth)
+  hwloc_topology_t topo
+  hwloc_cpuset_t   set
+  unsigned         depth
+  PROTOTYPE: $$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_nbobjs_inside_cpuset_by_depth = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_nbobjs_inside_cpuset_by_depth(topo,set,depth);
+  OUTPUT:
+    RETVAL
+
+
+int
+hwloc_get_nbobjs_inside_cpuset_by_type(topo,set,type)
+  hwloc_topology_t topo
+  hwloc_cpuset_t   set
+  int              type
+  PROTOTYPE: $$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_nbobjs_inside_cpuset_by_type = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_nbobjs_inside_cpuset_by_type(topo,set,type);
+  OUTPUT:
+    RETVAL
+
+
+hwloc_obj_t
+hwloc_get_obj_inside_cpuset_by_depth(topo,set,depth,idx)
+  hwloc_topology_t topo
+  hwloc_cpuset_t   set
+  unsigned         depth
+  unsigned         idx
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_obj_inside_cpuset_by_depth = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_obj_inside_cpuset_by_depth(topo,set,depth,idx);
+  OUTPUT:
+    RETVAL
+
+
+hwloc_obj_t
+hwloc_get_obj_inside_cpuset_by_type(topo,set,type,idx)
+  hwloc_topology_t topo
+  hwloc_cpuset_t   set
+  int              type
+  unsigned         idx
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_obj_inside_cpuset_by_type = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_obj_inside_cpuset_by_type(topo,set,type,idx);
+  OUTPUT:
+    RETVAL
+
+
+#if HWLOC_XSAPI_VERSION
+hwloc_obj_t
+hwloc_get_first_largest_obj_inside_cpuset(topo,set)
+  hwloc_topology_t topo
+  hwloc_cpuset_t   set
+  PROTOTYPE: $$
+  ALIAS:
+    Sys::Hwloc::Topology::get_first_largest_obj_inside_cpuset = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_first_largest_obj_inside_cpuset(topo,set);
+  OUTPUT:
+    RETVAL
+
+#endif
+
+hwloc_obj_t
+hwloc_get_next_obj_inside_cpuset_by_depth(topo,set,depth,prev)
+  hwloc_topology_t topo
+  hwloc_cpuset_t   set
+  unsigned         depth
+  SV              *prev
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_next_obj_inside_cpuset_by_depth = 1
+  PREINIT:
+    hwloc_obj_t o = NULL;
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    o      = SV2hwlocObj(prev, "Sys::Hwloc::hwloc_get_next_obj_inside_cpuset_by_depth()", 4, 1);
+    RETVAL = hwloc_get_next_obj_inside_cpuset_by_depth(topo,set,depth,o);
+  OUTPUT:
+    RETVAL
+
+
+hwloc_obj_t
+hwloc_get_next_obj_inside_cpuset_by_type(topo,set,type,prev)
+  hwloc_topology_t topo
+  hwloc_cpuset_t   set
+  int              type
+  SV              *prev
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_next_obj_inside_cpuset_by_type = 1
+  PREINIT:
+    hwloc_obj_t o = NULL;
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    o      = SV2hwlocObj(prev, "Sys::Hwloc::hwloc_get_next_obj_inside_cpuset_by_type()", 4, 1);
+    RETVAL = hwloc_get_next_obj_inside_cpuset_by_type(topo,set,type,o);
+  OUTPUT:
+    RETVAL
+
+
+void
+hwloc_get_largest_objs_inside_cpuset(topo,set)
+  hwloc_topology_t topo
+  hwloc_cpuset_t   set
+  PROTOTYPE: $$
+  ALIAS:
+    Sys::Hwloc::Topology::get_largest_objs_inside_cpuset = 1
+  PREINIT:
+    int rc;
+    int i;
+    hwloc_obj_t *objs = NULL;
+  PPCODE:
+    PERL_UNUSED_VAR(ix);
+    if((objs = (hwloc_obj_t *)malloc(1024 * sizeof(hwloc_obj_t *))) == NULL)
+      croak("Failed to allocate memory");
+    rc = hwloc_get_largest_objs_inside_cpuset(topo,set,objs,1024);
+    if(rc < 0)
+      rc = 0;
+    EXTEND(SP, rc);
+    for(i = 0; i < rc; i++)
+      PUSHs(sv_2mortal(hwlocObj2SV(objs[i])));
+    free(objs);
+    XSRETURN(rc);
 

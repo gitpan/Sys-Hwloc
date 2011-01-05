@@ -12,13 +12,13 @@
 #
 # Test if Hwloc module can do in principle what is expected
 #
-# $Id: 01-api.t,v 1.21 2010/12/29 16:15:20 bzbkalli Exp $
+# $Id: 01-api.t,v 1.25 2011/01/05 18:08:55 bzbkalli Exp $
 #
 ################################################################################
 
 use Test::More;
 use strict;
-use Sys::Hwloc 0.07 qw(:DEFAULT :binding);
+use Sys::Hwloc 0.08 qw(:DEFAULT :binding);
 
 # --
 # Sys::Hwloc methods
@@ -65,6 +65,14 @@ my @names = qw(
 	       hwloc_obj_is_in_subtree
 	       hwloc_compare_objects
 
+	       hwloc_get_nbobjs_inside_cpuset_by_depth
+	       hwloc_get_nbobjs_inside_cpuset_by_type
+	       hwloc_get_obj_inside_cpuset_by_depth
+	       hwloc_get_obj_inside_cpuset_by_type
+	       hwloc_get_next_obj_inside_cpuset_by_depth
+	       hwloc_get_next_obj_inside_cpuset_by_type
+	       hwloc_get_largest_objs_inside_cpuset
+
 	       hwloc_set_cpubind hwloc_set_proc_cpubind
 	      );
 
@@ -91,6 +99,8 @@ else {
 
 		  hwloc_topology_get_complete_cpuset hwloc_topology_get_topology_cpuset
 		  hwloc_topology_get_online_cpuset hwloc_topology_get_allowed_cpuset
+
+		  hwloc_get_first_largest_obj_inside_cpuset
 
 		  hwloc_get_cpubind hwloc_get_proc_cpubind
 		 );
@@ -124,7 +134,7 @@ if(HWLOC_XSAPI_VERSION() <= 0x00010000) {
 		    hwloc_cpuset_clr_range hwloc_cpuset_next
 		    hwloc_cpuset_compare hwloc_cpuset_compare_first
 
-		    hwloc_cpuset_from_liststring hwloc_cpuset_sprintf_list
+		    hwloc_cpuset_from_liststring hwloc_cpuset_list_sprintf
 		   );
   }
 }
@@ -161,7 +171,7 @@ if(HWLOC_XSAPI_VERSION() >= 0x00010100) {
 		  hwloc_bitmap_isfull hwloc_bitmap_iszero hwloc_bitmap_isset
 		  hwloc_bitmap_taskset_sscanf hwloc_bitmap_taskset_sprintf
 
-		  hwloc_bitmap_sscanf_list hwloc_bitmap_sprintf_list
+		  hwloc_bitmap_list_sscanf hwloc_bitmap_list_sprintf
 
 		  hwloc_cpuset_to_nodeset hwloc_cpuset_to_nodeset_strict
 		  hwloc_cpuset_from_nodeset hwloc_cpuset_from_nodeset_strict
@@ -212,6 +222,14 @@ my @topoMethods = qw(
 		     obj_is_in_subtree
 		     compare_objects
 
+		     get_nbobjs_inside_cpuset_by_depth
+		     get_nbobjs_inside_cpuset_by_type
+		     get_obj_inside_cpuset_by_depth
+		     get_obj_inside_cpuset_by_type
+		     get_next_obj_inside_cpuset_by_depth
+		     get_next_obj_inside_cpuset_by_type
+		     get_largest_objs_inside_cpuset
+
 		     set_cpubind set_proc_cpubind
 		    );
 
@@ -228,6 +246,8 @@ if(! HWLOC_API_VERSION()) {
 
 			get_complete_cpuset get_topology_cpuset
 			get_online_cpuset get_allowed_cpuset
+
+			get_first_largest_obj_inside_cpuset
 
 			get_cpubind get_proc_cpubind
 		       );
@@ -315,8 +335,6 @@ if(HWLOC_XSAPI_VERSION() <= 0x00010000) {
 
 		      includes intersects isequal isfull isincluded
 		      isset iszero
-
-		      sprintf_list
 		     );
   if(! HWLOC_XSAPI_VERSION()) {
     push @cpusetMethods, qw(
@@ -330,6 +348,7 @@ if(HWLOC_XSAPI_VERSION() <= 0x00010000) {
 			    and andnot not or xor
 			    next
 			    compare compare_first
+			    sprintf_list
 			   );
   }
 }
@@ -354,7 +373,7 @@ if(HWLOC_XSAPI_VERSION() >= 0x00010100) {
 		      compare isequal compare_first intersects
 		      isincluded includes
 		      isfull iszero isset
-		      taskset_sscanf taskset_sprintf
+		      sscanf_taskset sprintf_taskset
 		      sprintf_list sscanf_list
 		     );
 }

@@ -12,22 +12,22 @@
 #
 # Test the Sys::Hwloc::Cpuset API (hwloc-0.9 and 1.0)
 #
-# $Id: 07-cpuset.t,v 1.10 2010/12/29 16:15:20 bzbkalli Exp $
+# $Id: 07-cpuset.t,v 1.14 2011/01/05 18:08:55 bzbkalli Exp $
 #
 ################################################################################
 
 use Test::More 0.94;
 use strict;
-use Sys::Hwloc 0.07 qw(:DEFAULT :cpuset);
+use Sys::Hwloc 0.08 qw(:DEFAULT :cpuset);
 
-plan tests => 114;
+plan tests => 122;
 
 my $apiVersion = HWLOC_XSAPI_VERSION();
 my ($set, $set0, $set1, $rc);
 
 SKIP: {
 
-  skip 'Sys::Hwloc::Cpuset', 114 if ($apiVersion > 0x00010000);
+  skip 'Sys::Hwloc::Cpuset', 122 if ($apiVersion > 0x00010000);
 
   # --
   # Init cpuset, stop testing if this fails
@@ -55,6 +55,8 @@ SKIP: {
   is($rc, -1, 'hwloc_cpuset_first(<new>)');
   $rc = hwloc_cpuset_last($set);
   is($rc, -1, 'hwloc_cpuset_last(<new>)');
+  $rc = hwloc_cpuset_weight($set);
+  is($rc, 0, 'hwloc_cpuset_weight(<new>)');
 
   # --
   # Fill set, check if full
@@ -71,6 +73,8 @@ SKIP: {
   like($rc, $apiVersion ? qr/^0xf+(,0xf+(,.+|)|)$/i : qr/^f+(,f+(,.+|)|)$/i, 'hwloc_cpuset_sprintf(<full>)');
   $rc =  hwloc_cpuset_to_ith_ulong($set,0);
   cmp_ok($rc, '>', 0, 'hwloc_cpuset_to_ith_ulong(<full>,0)');
+  $rc = hwloc_cpuset_weight($set);
+  isnt($rc, 0, 'hwloc_cpuset_weight(<full>');
 
   # --
   # Zero out, check
@@ -119,6 +123,8 @@ SKIP: {
   is($rc, 0, 'hwloc_cpuset_first(<cpu0>)');
   $rc = hwloc_cpuset_last($set0);
   is($rc, 0, 'hwloc_cpuset_last(<cpu0>)');
+  $rc = hwloc_cpuset_weight($set0);
+  is($rc, 1, 'hwloc_cpuset_weight(<cpu0>)');
 
   # --
   # Duplicate set, reinit from int to set cpu1, check if set
@@ -215,6 +221,8 @@ SKIP: {
   is($rc, 1, 'hwloc_cpuset_isset(1 | 2,0)');
   $rc = hwloc_cpuset_isset($set,1);
   is($rc, 1, 'hwloc_cpuset_isset(1 | 2,1)');
+  $rc = hwloc_cpuset_weight($set);
+  is($rc, 2, 'hwloc_cpuset_weight(1 | 2)');
 
   # --
   # Add cpu2, check
@@ -320,16 +328,16 @@ SKIP: {
   # Check sprintf_list output and the reverse
   # --
 
-  hwloc_cpuset_zero($set);
-  hwloc_cpuset_set_range($set,0,7);
-  hwloc_cpuset_set_range($set,16,17);
-  hwloc_cpuset_set_range($set,24,27);
-  my $str = hwloc_cpuset_sprintf_list($set);
-  is($str, '0-7,16,17,24-27', 'hwloc_cpuset_sprintf_list(0-7,16,17,24-27)');
-
  SKIP: {
 
-    skip "hwloc_cpuset_from_liststring()", 1 unless $apiVersion;
+    skip "hwloc_cpuset_liststrings", 2 unless $apiVersion;
+
+    hwloc_cpuset_zero($set);
+    hwloc_cpuset_set_range($set,0,7);
+    hwloc_cpuset_set_range($set,16,17);
+    hwloc_cpuset_set_range($set,24,27);
+    my $str = hwloc_cpuset_list_sprintf($set);
+    is($str, '0-7,16,17,24-27', 'hwloc_cpuset_list_sprintf(0-7,16,17,24-27)');
 
     hwloc_cpuset_from_liststring($set0,$str);
     $rc = hwloc_cpuset_isequal($set,$set0);
@@ -375,6 +383,8 @@ SKIP: {
   is($rc, -1, 'newset->first');
   $rc = $set->last;
   is($rc, -1, 'newset->last');
+  $rc = $set->weight;
+  is($rc, 0, 'newset->weight');
 
   # --
   # Fill set, check if full
@@ -391,6 +401,8 @@ SKIP: {
   like($rc, $apiVersion ? qr/^0xf+(,0xf+(,.+|)|)$/i : qr/^f+(,f+(,.+|)|)$/i, 'fullset->sprintf');
   $rc = $set->to_ith_ulong(0);
   cmp_ok($rc, '>', 0, 'fullset->to_ith_ulong(0)');
+  $rc = $set->weight;
+  isnt($rc, 0, 'fullset->weight');
 
   # --
   # Zero out, check
@@ -439,6 +451,8 @@ SKIP: {
   is($rc, 0, 'cpu0set->first');
   $rc = $set0->last;
   is($rc, 0, 'cpu0set->last');
+  $rc = $set0->weight;
+  is($rc, 1, 'cpu0set->weight');
 
   # --
   # Duplicate set, reinit from int to set cpu1, check if set
@@ -513,7 +527,7 @@ SKIP: {
 
  SKIP: {
 
-    skip "cpuset->from_string", 3 unless $apiVersion;
+    skip "cpuset->from_string", 4 unless $apiVersion;
 
     $rc = $set->from_string(1 | 2);
     is($rc, 0, 'set->from_string(1 | 2)');
@@ -521,6 +535,8 @@ SKIP: {
     is($rc, 1, '(1 | 2) -> isset(0)');
     $rc = $set->isset(1);
     is($rc, 1, '(1 | 2) -> isset(1)');
+    $rc = $set->weight;
+    is($rc, 2, '(1 | 2) -> weight');
 
   };
 
@@ -628,16 +644,16 @@ SKIP: {
   # Check sprintf_list output and the reverse
   # --
 
-  $set->zero;
-  $set->set_range(0,7);
-  $set->set_range(16,17);
-  $set->set_range(24,27);
-  $str = $set->sprintf_list;
-  is($str, '0-7,16,17,24-27', 'set->sprintf_list');
+SKIP: {
 
- SKIP: {
+    skip "set->liststrings", 2 unless $apiVersion;
 
-    skip "set->from_liststring", 1 unless $apiVersion;
+    $set->zero;
+    $set->set_range(0,7);
+    $set->set_range(16,17);
+    $set->set_range(24,27);
+    my $str = $set->sprintf_list;
+    is($str, '0-7,16,17,24-27', 'set->sprintf_list');
 
     $set0->from_liststring($str);
     $rc = $set->isequal($set0);

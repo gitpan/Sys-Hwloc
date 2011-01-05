@@ -71,6 +71,15 @@ Sys::Hwloc::Topology - Class representing a hwloc topology context
        $topology->cpuset_from_nodeset( $cpuset, $nodeset );
        $topology->cpuset_from_nodeset_strict( $cpuset, $nodeset );
 
+       $rc   = $topology->get_nbobjs_inside_cpuset_by_depth( $cpuset, $depth );
+       $rc   = $topology->get_nbobjs_inside_cpuset_by_type( $cpuset, $type );
+       $obj  = $topology->get_obj_inside_cpuset_by_depth( $cpuset, $depth );
+       $obj  = $topology->get_obj_inside_cpuset_by_type( $cpuset, $type );
+       $obj  = $topology->get_next_obj_inside_cpuset_by_depth( $cpuset, $depth, $prev );
+       $obj  = $topology->get_next_obj_inside_cpuset_by_type( $cpuset, $type, $prev );
+       $obj  = $topology->get_first_largest_obj_inside_cpuset( $cpuset );
+       @objs = $topology->get_largest_objs_inside_cpuset( $cpuset );
+
 =head1 DESCRIPTION
 
 Sys::Hwloc::Topology is the Perl namespace used for I<struct hwloc_topology>

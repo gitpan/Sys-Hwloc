@@ -9,7 +9,7 @@
  *  Please send comments to kallies@zib.de
  *
  * *******************************************************************
- * $Id: Hwloc.xs,v 1.33 2010/12/29 13:28:02 bzbkalli Exp $
+ * $Id: Hwloc.xs,v 1.37 2011/01/05 18:08:55 bzbkalli Exp $
  * ******************************************************************* */
 
 #include "EXTERN.h"
@@ -280,124 +280,70 @@ static HV *hwlocObjInfos2HV(struct hwloc_obj_info_s *s, unsigned n) {
 /*
  * Pretty-print bits set in a cpuset or bitmap.
  * The result string conforms to Linux cpuset(7) list format.
+ * Something like that may be present in future hwloc.
  * On success, the number of characters printed is returned (not including trailing '\0').
  * On failure, -1 is returned.
  */
 
+#if HWLOC_XSAPI_VERSION
 #if HWLOC_XSAPI_VERSION <= 0x00010000
-static int hwloc_cpuset_snprintf_list(char *buf, size_t buflen, hwloc_const_cpuset_t map) {
-  unsigned last_id = UINT_MAX;
-  unsigned id;
-  char     *p = buf, *pr, *p_last = NULL;
-  size_t   len, rlen;
-  int      rc, rcount = 0;
+static int _hwloc_cpuset_list_snprintf(char *buf, size_t buflen, hwloc_const_cpuset_t map) {
+  int len = 0;
+  int fid, lid, id;
 
   *buf = '\0';
-  hwloc_cpuset_foreach_begin(id, map) {
-    len  = strlen(buf);
-    rlen = buflen - len;
-    if(len) {
-      if(id - last_id == 1) {
-	switch(rcount) {
-	case 1:
-	  rc = snprintf(p, rlen, ",%u", id);
-	  break;
-	case 2:
-	  pr = strchr(p_last, ',');
-	  rc = snprintf(pr, rlen, "-%u", id);
-	  p = pr + strlen(pr);
-	  break;
-	default:
-	  pr = strchr(p_last, '-');
-	  rc = snprintf(pr, rlen, "-%u", id);
-	  p = pr + strlen(pr);
-	}
-	rcount++;
-      } else {
-	rc = snprintf(p, rlen, ",%u", id);
-	rcount = 1;
-      }
-    } else {
-      rc = snprintf(p, rlen, "%u", id);
-      rcount = 1;
+  fid  = id = hwloc_cpuset_first(map);
+  while(id != -1) {
+    lid = id;
+    id = hwloc_cpuset_next(map, id);
+    if((id == -1) || (id > lid + 1)) {
+      if(len > 0)
+	len += snprintf(buf + len, buflen - len, ",");
+      if(fid == lid)
+	len += snprintf(buf + len, buflen - len, "%d", fid);
+      else if(lid > fid + 1)
+	len += snprintf(buf + len, buflen - len, "%d-%d", fid, lid);
+      else
+	len += snprintf(buf + len, buflen - len, "%d,%d", fid, lid);
+      fid = id;
     }
-
-    if(rc < 0)
-      return -1;
-    if(rc >= rlen)
-      return -1;
-
-    last_id = id;
-    if(rcount < 3)
-      p_last = p;
-    p += strlen(p);
   }
-  hwloc_cpuset_foreach_end();
-  return strlen(buf);
+  return len;
 }
 #else
-static int hwloc_bitmap_snprintf_list(char *buf, size_t buflen, hwloc_const_bitmap_t map) {
-  unsigned last_id = UINT_MAX;
-  unsigned id;
-  char     *p = buf, *pr, *p_last = NULL;
-  size_t   len, rlen;
-  int      rc, rcount = 0;
+static int _hwloc_bitmap_list_snprintf(char *buf, size_t buflen, hwloc_const_bitmap_t map) {
+  int len = 0;
+  int fid, lid, id;
 
   *buf = '\0';
-  hwloc_bitmap_foreach_begin(id, map) {
-    len  = strlen(buf);
-    rlen = buflen - len;
-    if(len) {
-      if(id - last_id == 1) {
-	switch(rcount) {
-	case 1:
-	  rc = snprintf(p, rlen, ",%u", id);
-	  break;
-	case 2:
-	  pr = strchr(p_last, ',');
-	  rc = snprintf(pr, rlen, "-%u", id);
-	  p = pr + strlen(pr);
-	  break;
-	default:
-	  pr = strchr(p_last, '-');
-	  rc = snprintf(pr, rlen, "-%u", id);
-	  p = pr + strlen(pr);
-	}
-	rcount++;
-      } else {
-	rc = snprintf(p, rlen, ",%u", id);
-	rcount = 1;
-      }
-    } else {
-      rc = snprintf(p, rlen, "%u", id);
-      rcount = 1;
+  fid  = id = hwloc_bitmap_first(map);
+  while(id != -1) {
+    lid = id;
+    id = hwloc_bitmap_next(map, id);
+    if((id == -1) || (id > lid + 1)) {
+      if(len > 0)
+	len += snprintf(buf + len, buflen - len, ",");
+      if(fid == lid)
+	len += snprintf(buf + len, buflen - len, "%d", fid);
+      else if(lid > fid + 1)
+	len += snprintf(buf + len, buflen - len, "%d-%d", fid, lid);
+      else
+	len += snprintf(buf + len, buflen - len, "%d,%d", fid, lid);
+      fid = id;
     }
-
-    if(rc < 0)
-      return -1;
-
-    if(rc >= rlen)
-      return -1;
-
-    last_id = id;
-    if(rcount < 3)
-      p_last = p;
-    p += strlen(p);
   }
-  hwloc_bitmap_foreach_end();
-  return strlen(buf);
+  return len;
 }
 #endif
 
 /*
  * Convert Linux cpuset(7) list format ASCII string to bitmap.
+ * Something like that may be present in future hwloc.
  * Return 0 on success, -1 on error.
- * The code is adapted from bitmap.c in recent Linux kernel.
  */
 
-#if HWLOC_XSAPI_VERSION
 #if HWLOC_XSAPI_VERSION <= 0x00010000
-static int hwloc_cpuset_sscanf_list(hwloc_cpuset_t map, const char *s) {
+static int _hwloc_cpuset_list_sscanf(hwloc_cpuset_t map, const char *s) {
   unsigned a, b;
 
   if(! s)
@@ -434,7 +380,7 @@ static int hwloc_cpuset_sscanf_list(hwloc_cpuset_t map, const char *s) {
 
 }
 #else
-static int hwloc_bitmap_sscanf_list(hwloc_bitmap_t map, const char *s) {
+static int _hwloc_bitmap_list_sscanf(hwloc_bitmap_t map, const char *s) {
   unsigned a, b;
 
   if(! map)
@@ -1404,7 +1350,7 @@ hwloc_obj_t
 hwloc_get_next_child(obj,prev)
   hwloc_obj_t   obj
   SV           *prev
-  PROTOTYPE: $$$
+  PROTOTYPE: $$
   ALIAS:
     Sys::Hwloc::Obj::get_next_child = 1
     Sys::Hwloc::Obj::next_child     = 2

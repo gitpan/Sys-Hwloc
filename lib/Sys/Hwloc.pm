@@ -9,7 +9,7 @@
 #  Please send comments to kallies@zib.de
 #
 ################################################################################
-# $Id: Hwloc.pm,v 1.28 2010/12/29 16:15:20 bzbkalli Exp $
+# $Id: Hwloc.pm,v 1.32 2011/01/05 18:08:55 bzbkalli Exp $
 ################################################################################
 
 package Sys::Hwloc;
@@ -22,7 +22,7 @@ use Carp;
 
 BEGIN {
 
-  $VERSION = '0.07';
+  $VERSION = '0.08';
 
   require Exporter;
   use AutoLoader;
@@ -124,7 +124,13 @@ BEGIN {
 			       hwloc_cpuset_isfull hwloc_cpuset_isincluded
 			       hwloc_cpuset_isset hwloc_cpuset_iszero
 
-			       hwloc_cpuset_sprintf_list
+			       hwloc_get_nbobjs_inside_cpuset_by_depth
+			       hwloc_get_nbobjs_inside_cpuset_by_type
+			       hwloc_get_obj_inside_cpuset_by_depth
+			       hwloc_get_obj_inside_cpuset_by_type
+			       hwloc_get_next_obj_inside_cpuset_by_depth
+			       hwloc_get_next_obj_inside_cpuset_by_type
+			       hwloc_get_largest_objs_inside_cpuset
 			      )];
 
     if(! HWLOC_XSAPI_VERSION()) {
@@ -139,10 +145,14 @@ BEGIN {
 				       hwloc_cpuset_or hwloc_cpuset_xor
 				       hwloc_cpuset_next
 				       hwloc_cpuset_compare hwloc_cpuset_compare_first
+
 				       hwloc_cpuset_from_liststring
+				       hwloc_cpuset_list_sprintf
 
 				       hwloc_topology_get_complete_cpuset hwloc_topology_get_topology_cpuset
 				       hwloc_topology_get_online_cpuset hwloc_topology_get_allowed_cpuset
+
+				       hwloc_get_first_largest_obj_inside_cpuset
 				      );
     }
 
@@ -173,7 +183,7 @@ BEGIN {
 			       hwloc_bitmap_isfull hwloc_bitmap_iszero hwloc_bitmap_isset
 			       hwloc_bitmap_taskset_sscanf hwloc_bitmap_taskset_sprintf
 
-			       hwloc_bitmap_sprintf_list hwloc_bitmap_sscanf_list
+			       hwloc_bitmap_list_sprintf hwloc_bitmap_list_sscanf
 
 			       hwloc_topology_get_complete_cpuset hwloc_topology_get_topology_cpuset
 			       hwloc_topology_get_online_cpuset hwloc_topology_get_allowed_cpuset
@@ -183,6 +193,15 @@ BEGIN {
 
 			       hwloc_cpuset_to_nodeset hwloc_cpuset_to_nodeset_strict
 			       hwloc_cpuset_from_nodeset hwloc_cpuset_from_nodeset_strict
+
+			       hwloc_get_nbobjs_inside_cpuset_by_depth
+			       hwloc_get_nbobjs_inside_cpuset_by_type
+			       hwloc_get_obj_inside_cpuset_by_depth
+			       hwloc_get_obj_inside_cpuset_by_type
+			       hwloc_get_next_obj_inside_cpuset_by_depth
+			       hwloc_get_next_obj_inside_cpuset_by_type
+			       hwloc_get_first_largest_obj_inside_cpuset
+			       hwloc_get_largest_objs_inside_cpuset
 			      )];
 
   }
@@ -606,7 +625,7 @@ requested with
        $val  = hwloc_cpuset_to_ulong($set)
        $val  = hwloc_cpuset_to_ith_ulong($set,$i)
        $val  = hwloc_cpuset_sprintf($set)
-       $val  = hwloc_cpuset_sprintf_list($set)                   not in hwloc
+       $val  = hwloc_cpuset_list_sprintf($set)                   not in hwloc
        @vals = hwloc_cpuset_ids($set)                            not in hwloc
        $rc   = hwloc_cpuset_isset($set,$id)
        $rc   = hwloc_cpuset_iszero($set)
@@ -684,11 +703,27 @@ requested with
        $set  = hwloc_topology_get_topology_cpuset($t)            since  hwloc-1.0
        $set  = hwloc_topology_get_online_cpuset($t)              since  hwloc-1.0
        $set  = hwloc_topology_get_allowed_cpuset($t)             since  hwloc-1.0
+       $rc   = hwloc_get_nbobjs_inside_cpuset_by_depth($t,$set,$depth)
+       $rc   = hwloc_get_nbobjs_inside_cpuset_by_type($t,$set,$type)
+       $obj  = hwloc_get_obj_inside_cpuset_by_depth($t,$set,$depth)
+       $obj  = hwloc_get_obj_inside_cpuset_by_type($t,$set,$type)
+       $obj  = hwloc_get_next_obj_inside_cpuset_by_depth($t,$set,$depth,$prev)
+       $obj  = hwloc_get_next_obj_inside_cpuset_by_type($t,$set,$type,$prev)
+       $obj  = hwloc_get_first_largest_obj_inside_cpuset($t,$set) since hwloc-1.0
+       @objs = hwloc_get_largest_objs_inside_cpuset($t,$set)
 
        $set  = $t->get_complete_cpuset                           since  hwloc-1.0
        $set  = $t->get_topology_cpuset                           since  hwloc-1.0
        $set  = $t->get_online_cpuset                             since  hwloc-1.0
        $set  = $t->get_allowed_cpuset                            since  hwloc-1.0
+       $rc   = $t->get_nbobjs_inside_cpuset_by_depth($set,$depth)
+       $rc   = $t->get_nbobjs_inside_cpuset_by_type($set,$type)
+       $obj  = $t->get_obj_inside_cpuset_by_depth($set,$depth)
+       $obj  = $t->get_obj_inside_cpuset_by_type($set,$type)
+       $obj  = $t->get_next_obj_inside_cpuset_by_depth($set,$depth,$prev)
+       $obj  = $t->get_next_obj_inside_cpuset_by_type($set,$type,$prev)
+       $obj  = $t->get_first_largest_obj_inside_cpuset($set)
+       @objs = $t->get_largest_objs_inside_cpuset($set)
 
 =head1 BITMAP API (since hwloc-1.1)
 
@@ -713,7 +748,7 @@ requested with
        hwloc_bitmap_from_ulong($map,$mask)
        hwloc_bitmap_from_ith_ulong($map,$i,$mask)
        $rc   = hwloc_bitmap_sscanf($map,$string)
-       $rc   = hwloc_bitmap_sscanf_list($map,$string)            not in hwloc
+       $rc   = hwloc_bitmap_list_sscanf($map,$string)            not in hwloc
        $rc   = hwloc_bitmap_taskset_sscanf($map,$string)
        hwloc_bitmap_set($map,$id)
        hwloc_bitmap_set_range($map,$ida,$ide)
@@ -724,7 +759,7 @@ requested with
        $val  = hwloc_bitmap_to_ulong($map)
        $val  = hwloc_bitmap_to_ith_ulong($map,$i)
        $val  = hwloc_bitmap_sprintf($map)
-       $val  = hwloc_bitmap_sprintf_list($map)                   not in hwloc
+       $val  = hwloc_bitmap_list_sprintf($map)                   not in hwloc
        $val  = hwloc_bitmap_taskset_sprintf($map)
        @vals = hwloc_bitmap_ids($map)                            not in hwloc
        $rc   = hwloc_bitmap_isset($map,$id)
@@ -761,7 +796,7 @@ requested with
        $map->from_ith_ulong($i,$mask)
        $rc   = $map->sscanf($string)
        $rc   = $map->sscanf_list($string)                        not in hwloc
-       $rc   = $map->taskset_sscanf($string)
+       $rc   = $map->sscanf_taskset($string)
        $map->set($id)
        $map->set_range($ida,$ide)
        $map->set_ith_ulong($i,$mask)
@@ -772,7 +807,7 @@ requested with
        $val  = $map->to_ith_ulong($i)
        $val  = $map->sprintf
        $val  = $map->sprintf_list
-       $val  = $map->taskset_sprintf
+       $val  = $map->sprintf_taskset
        @vals = $map->ids                                         not in hwloc
        $rc   = $map->isset($id)
        $rc   = $map->iszero
@@ -795,29 +830,45 @@ requested with
 
 =head2 Cpuset and Nodeset helpers
 
-       $set  = hwloc_topology_get_complete_cpuset($t)            since  hwloc-1.0
-       $set  = hwloc_topology_get_topology_cpuset($t)            since  hwloc-1.0
-       $set  = hwloc_topology_get_online_cpuset($t)              since  hwloc-1.0
-       $set  = hwloc_topology_get_allowed_cpuset($t)             since  hwloc-1.0
-       $set  = hwloc_topology_get_complete_nodeset($t)           since  hwloc-1.1
-       $set  = hwloc_topology_get_topology_nodeset($t)           since  hwloc-1.1
-       $set  = hwloc_topology_get_allowed_nodeset($t)            since  hwloc-1.1
-       hwloc_cpuset_to_nodeset($t,$cpuset,$nodeset)              since  hwloc-1.1
-       hwloc_cpuset_to_nodeset_strict($t,$cpuset,$nodeset)       since  hwloc-1.1
-       hwloc_cpuset_from_nodeset($t,$cpuset,$nodeset)            since  hwloc-1.1
-       hwloc_cpuset_from_nodeset_strict($t,$cpuset,$nodeset)     since  hwloc-1.1
+       $set  = hwloc_topology_get_complete_cpuset($t)
+       $set  = hwloc_topology_get_topology_cpuset($t)
+       $set  = hwloc_topology_get_online_cpuset($t)
+       $set  = hwloc_topology_get_allowed_cpuset($t)
+       $set  = hwloc_topology_get_complete_nodeset($t)
+       $set  = hwloc_topology_get_topology_nodeset($t)
+       $set  = hwloc_topology_get_allowed_nodeset($t)
+       hwloc_cpuset_to_nodeset($t,$cpuset,$nodeset)
+       hwloc_cpuset_to_nodeset_strict($t,$cpuset,$nodeset)
+       hwloc_cpuset_from_nodeset($t,$cpuset,$nodeset)
+       hwloc_cpuset_from_nodeset_strict($t,$cpuset,$nodeset)
+       $rc   = hwloc_get_nbobjs_inside_cpuset_by_depth($t,$set,$depth)
+       $rc   = hwloc_get_nbobjs_inside_cpuset_by_type($t,$set,$type)
+       $obj  = hwloc_get_obj_inside_cpuset_by_depth($t,$set,$depth)
+       $obj  = hwloc_get_obj_inside_cpuset_by_type($t,$set,$type)
+       $obj  = hwloc_get_next_obj_inside_cpuset_by_depth($t,$set,$depth,$prev)
+       $obj  = hwloc_get_next_obj_inside_cpuset_by_type($t,$set,$type,$prev)
+       $obj  = hwloc_get_first_largest_obj_inside_cpuset($t,$set)
+       @objs = hwloc_get_largest_objs_inside_cpuset($t,$set)
 
-       $set  = $t->get_complete_cpuset                           since  hwloc-1.0
-       $set  = $t->get_topology_cpuset                           since  hwloc-1.0
-       $set  = $t->get_online_cpuset                             since  hwloc-1.0
-       $set  = $t->get_allowed_cpuset                            since  hwloc-1.0
-       $set  = $t->get_complete_nodeset                          since  hwloc-1.1
-       $set  = $t->get_topology_nodeset                          since  hwloc-1.1
-       $set  = $t->get_allowed_nodeset                           since  hwloc-1.1
-       $t->cpuset_to_nodeset($cpuset,$nodeset)                   since  hwloc-1.1
-       $t->cpuset_to_nodeset_strict($cpuset,$nodeset)            since  hwloc-1.1
-       $t->cpuset_from_nodeset($cpuset,$nodeset)                 since  hwloc-1.1
-       $t->cpuset_from_nodeset_strict($cpuset,$nodeset)          since  hwloc-1.1
+       $set  = $t->get_complete_cpuset
+       $set  = $t->get_topology_cpuset
+       $set  = $t->get_online_cpuset
+       $set  = $t->get_allowed_cpuset
+       $set  = $t->get_complete_nodeset
+       $set  = $t->get_topology_nodeset
+       $set  = $t->get_allowed_nodeset
+       $t->cpuset_to_nodeset($cpuset,$nodeset)
+       $t->cpuset_to_nodeset_strict($cpuset,$nodeset)
+       $t->cpuset_from_nodeset($cpuset,$nodeset)
+       $t->cpuset_from_nodeset_strict($cpuset,$nodeset)
+       $rc   = $t->get_nbobjs_inside_cpuset_by_depth($set,$depth)
+       $rc   = $t->get_nbobjs_inside_cpuset_by_type($set,$type)
+       $obj  = $t->get_obj_inside_cpuset_by_depth($set,$depth)
+       $obj  = $t->get_obj_inside_cpuset_by_type($set,$type)
+       $obj  = $t->get_next_obj_inside_cpuset_by_depth($set,$depth,$prev)
+       $obj  = $t->get_next_obj_inside_cpuset_by_type($set,$type,$prev)
+       $obj  = $t->get_first_largest_obj_inside_cpuset($set)
+       @objs = $t->get_largest_objs_inside_cpuset($set)
 
 =head1 BINDING API
 

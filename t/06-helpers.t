@@ -12,7 +12,7 @@
 #
 # Test topology helpers with topology on this machine
 #
-# $Id: 06-helpers.t,v 1.10 2010/12/28 18:19:02 bzbkalli Exp $
+# $Id: 06-helpers.t,v 1.11 2011/01/05 12:32:59 bzbkalli Exp $
 #
 ################################################################################
 
@@ -482,10 +482,29 @@ SKIP: {
 	  if($o->arity) {
 	    subtest $test => sub {
 
-	      plan tests => $o->arity * 2;
+	      plan tests => $o->arity * 4;
+
+	      $rc = undef;
+	      my $k  = 0;
+	      while($rc = hwloc_get_next_child($o,$rc)) {
+		$test = sprintf("hwloc_get_nextchild(hwloc_get_obj_by_depth(%d,%d), %d)", $i, $j, $k);
+		if(isa_ok($rc, 'Sys::Hwloc::Obj', $test)) {
+		  subtest "\%{$test}" => sub {
+
+		    plan tests => 2;
+
+		    is($rc->depth,        $i+1, $test."->depth");
+		    is($rc->sibling_rank, $k,   $test."->sibling_rank");
+
+		  };
+		} else {
+		  fail("\%{$test}");
+		}
+		$k++;
+	      }
 
 	      $rc   = undef;
-	      my $k = 0;
+	      $k = 0;
 	      while($rc = $o->get_next_child($rc)) {
 		$test = sprintf("hwloc_get_obj_by_depth(%d,%d)->get_next_child() %d", $i, $j, $k);
 		if(isa_ok($rc, 'Sys::Hwloc::Obj', $test)) {
@@ -502,9 +521,10 @@ SKIP: {
 		}
 		$k++;
 	      }
+
 	    };
 	  } else {
-	    is($o->get_next_child(undef), undef, $test);
+	    is(hwloc_get_next_child($o,undef), undef, $test);
 	  }
 	} else {
 	  fail(sprintf("hwloc_get_obj_by_depth(%d,%d)", $i, $j));

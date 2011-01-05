@@ -1,7 +1,7 @@
 
  # -------------------------------------------------------------------
  # Bitmap API, see Sys::Hwloc::Bitmap for accessors
- # $Id: hwloc_bitmap.xsh,v 1.6 2010/12/21 19:44:16 bzbkalli Exp $
+ # $Id: hwloc_bitmap.xsh,v 1.8 2011/01/05 17:16:12 bzbkalli Exp $
  # -------------------------------------------------------------------
 
  # -- new/destroy
@@ -164,28 +164,18 @@ hwloc_bitmap_sscanf(map,string)
   ALIAS:
     Sys::Hwloc::Bitmap::sscanf              = 1
     Sys::Hwloc::hwloc_bitmap_taskset_sscanf = 10
-    Sys::Hwloc::Bitmap::taskset_sscanf      = 11
+    Sys::Hwloc::Bitmap::sscanf_taskset      = 11
+    Sys::Hwloc::hwloc_bitmap_list_sscanf    = 20
+    Sys::Hwloc::Bitmap::sscanf_list         = 21
   CODE:
     if(ix < 10)
       RETVAL = hwloc_bitmap_sscanf(map,string);
     else if(ix < 20)
       RETVAL = hwloc_bitmap_taskset_sscanf(map,string);
+    else if(ix < 30)
+      RETVAL = _hwloc_bitmap_list_sscanf(map,string);
     else
       croak("Should not come here in Sys::Hwloc::hwloc_bitmap_sscanf, alias = %d", (int)ix);
-  OUTPUT:
-    RETVAL
-
-
-int
-hwloc_bitmap_sscanf_list(map,string)
-  hwloc_bitmap_t  map
-  const char     *string
-  PROTOTYPE: $$
-  ALIAS:
-    Sys::Hwloc::Bitmap::sscanf_list = 1
-  CODE:
-    PERL_UNUSED_VAR(ix);
-    RETVAL = hwloc_bitmap_sscanf_list(map,string);
   OUTPUT:
     RETVAL
 
@@ -299,7 +289,9 @@ hwloc_bitmap_sprintf(map)
   ALIAS:
     Sys::Hwloc::Bitmap::sprintf              = 1
     Sys::Hwloc::hwloc_bitmap_taskset_sprintf = 10
-    Sys::Hwloc::Bitmap::taskset_sprintf      = 11
+    Sys::Hwloc::Bitmap::sprintf_taskset      = 11
+    Sys::Hwloc::hwloc_bitmap_list_sprintf    = 20
+    Sys::Hwloc::Bitmap::sprintf_list         = 21
   PREINIT:
     int   rc;
   CODE:
@@ -307,27 +299,11 @@ hwloc_bitmap_sprintf(map)
       rc = hwloc_bitmap_snprintf(sbuf, sizeof(sbuf), map);
     else if(ix < 20)
       rc = hwloc_bitmap_taskset_snprintf(sbuf, sizeof(sbuf), map);
+    else if(ix < 30)
+      rc = _hwloc_bitmap_list_snprintf(sbuf, sizeof(sbuf), map);
     else
       croak("Should not come here in Sys::Hwloc::hwloc_bitmap_sprintf, alias = %d", (int)ix);
     if(rc == -1)
-      XSRETURN_UNDEF;
-    else
-      RETVAL = newSVpvn(sbuf,(STRLEN)rc);
-  OUTPUT:
-    RETVAL
-
-
-SV *
-hwloc_bitmap_sprintf_list(map)
-  hwloc_bitmap_t map
-  PROTOTYPE: $
-  ALIAS:
-    Sys::Hwloc::Bitmap::sprintf_list = 1
-  PREINIT:
-    int   rc;
-  CODE:
-    PERL_UNUSED_VAR(ix);
-    if((rc = hwloc_bitmap_snprintf_list(sbuf, sizeof(sbuf), map)) == -1)
       XSRETURN_UNDEF;
     else
       RETVAL = newSVpvn(sbuf,(STRLEN)rc);
@@ -541,4 +517,146 @@ hwloc_topology_get_complete_nodeset(topo)
       croak("Should not come here in Sys::Hwloc::hwloc_topology_get_complete_nodeset, alias = %d", (int)ix);
   OUTPUT:
     RETVAL
+
+ # -------------------------------------------------------------------
+ # Finding objects inside cpusets
+ # -------------------------------------------------------------------
+
+unsigned
+hwloc_get_nbobjs_inside_cpuset_by_depth(topo,set,depth)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  unsigned         depth
+  PROTOTYPE: $$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_nbobjs_inside_cpuset_by_depth = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_nbobjs_inside_cpuset_by_depth(topo,set,depth);
+  OUTPUT:
+    RETVAL
+
+
+int
+hwloc_get_nbobjs_inside_cpuset_by_type(topo,set,type)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  int              type
+  PROTOTYPE: $$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_nbobjs_inside_cpuset_by_type = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_nbobjs_inside_cpuset_by_type(topo,set,type);
+  OUTPUT:
+    RETVAL
+
+
+hwloc_obj_t
+hwloc_get_obj_inside_cpuset_by_depth(topo,set,depth,idx)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  unsigned         depth
+  unsigned         idx
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_obj_inside_cpuset_by_depth = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_obj_inside_cpuset_by_depth(topo,set,depth,idx);
+  OUTPUT:
+    RETVAL
+
+
+hwloc_obj_t
+hwloc_get_obj_inside_cpuset_by_type(topo,set,type,idx)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  int              type
+  unsigned         idx
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_obj_inside_cpuset_by_type = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_obj_inside_cpuset_by_type(topo,set,type,idx);
+  OUTPUT:
+    RETVAL
+
+
+hwloc_obj_t
+hwloc_get_first_largest_obj_inside_cpuset(topo,set)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  PROTOTYPE: $$
+  ALIAS:
+    Sys::Hwloc::Topology::get_first_largest_obj_inside_cpuset = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_first_largest_obj_inside_cpuset(topo,set);
+  OUTPUT:
+    RETVAL
+
+
+hwloc_obj_t
+hwloc_get_next_obj_inside_cpuset_by_depth(topo,set,depth,prev)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  unsigned         depth
+  SV              *prev
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_next_obj_inside_cpuset_by_depth = 1
+  PREINIT:
+    hwloc_obj_t o = NULL;
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    o      = SV2hwlocObj(prev, "Sys::Hwloc::hwloc_get_next_obj_inside_cpuset_by_depth()", 4, 1);
+    RETVAL = hwloc_get_next_obj_inside_cpuset_by_depth(topo,set,depth,o);
+  OUTPUT:
+    RETVAL
+
+
+hwloc_obj_t
+hwloc_get_next_obj_inside_cpuset_by_type(topo,set,type,prev)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  int              type
+  SV              *prev
+  PROTOTYPE: $$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_next_obj_inside_cpuset_by_type = 1
+  PREINIT:
+    hwloc_obj_t o = NULL;
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    o      = SV2hwlocObj(prev, "Sys::Hwloc::hwloc_get_next_obj_inside_cpuset_by_type()", 4, 1);
+    RETVAL = hwloc_get_next_obj_inside_cpuset_by_type(topo,set,type,o);
+  OUTPUT:
+    RETVAL
+
+
+void
+hwloc_get_largest_objs_inside_cpuset(topo,set)
+  hwloc_topology_t topo
+  hwloc_bitmap_t   set
+  PROTOTYPE: $$
+  ALIAS:
+    Sys::Hwloc::Topology::get_largest_objs_inside_cpuset = 1
+  PREINIT:
+    int rc;
+    int i;
+    hwloc_obj_t *objs = NULL;
+  PPCODE:
+    PERL_UNUSED_VAR(ix);
+    if((objs = (hwloc_obj_t *)malloc(1024 * sizeof(hwloc_obj_t *))) == NULL)
+      croak("Failed to allocate memory");
+    rc = hwloc_get_largest_objs_inside_cpuset(topo,set,objs,1024);
+    if(rc < 0)
+      rc = 0;
+    EXTEND(SP, rc);
+    for(i = 0; i < rc; i++)
+      PUSHs(sv_2mortal(hwlocObj2SV(objs[i])));
+    free(objs);
+    XSRETURN(rc);
 
