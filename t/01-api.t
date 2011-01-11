@@ -1,6 +1,6 @@
 ################################################################################
 #
-#  Copyright 2010 Zuse Institute Berlin
+#  Copyright 2011 Zuse Institute Berlin
 #
 #  This package and its accompanying libraries is free software; you can
 #  redistribute it and/or modify it under the terms of the GPL version 2.0,
@@ -12,13 +12,13 @@
 #
 # Test if Hwloc module can do in principle what is expected
 #
-# $Id: 01-api.t,v 1.25 2011/01/05 18:08:55 bzbkalli Exp $
+# $Id: 01-api.t,v 1.28 2011/01/11 10:49:40 bzbkalli Exp $
 #
 ################################################################################
 
 use Test::More;
 use strict;
-use Sys::Hwloc 0.08 qw(:DEFAULT :binding);
+use Sys::Hwloc 0.09 qw(:DEFAULT :binding);
 
 # --
 # Sys::Hwloc methods
@@ -63,6 +63,7 @@ my @names = qw(
 	       hwloc_get_next_child
 	       hwloc_get_common_ancestor_obj
 	       hwloc_obj_is_in_subtree
+	       hwloc_get_closest_objs
 	       hwloc_compare_objects
 
 	       hwloc_get_nbobjs_inside_cpuset_by_depth
@@ -96,6 +97,7 @@ else {
 		  hwloc_get_ancestor_obj_by_depth
 		  hwloc_get_ancestor_obj_by_type
 		  hwloc_get_pu_obj_by_os_index
+		  hwloc_get_obj_below_by_type
 
 		  hwloc_topology_get_complete_cpuset hwloc_topology_get_topology_cpuset
 		  hwloc_topology_get_online_cpuset hwloc_topology_get_allowed_cpuset
@@ -220,6 +222,7 @@ my @topoMethods = qw(
 		     get_next_obj_by_type next_obj_by_type
 		     get_common_ancestor_obj common_ancestor_obj
 		     obj_is_in_subtree
+		     get_closest_objs
 		     compare_objects
 
 		     get_nbobjs_inside_cpuset_by_depth
@@ -243,6 +246,7 @@ if(! HWLOC_API_VERSION()) {
 			get_support
 			root_obj root
 			get_pu_obj_by_os_index pu_obj_by_os_index
+			get_obj_below_by_type
 
 			get_complete_cpuset get_topology_cpuset
 			get_online_cpuset get_allowed_cpuset

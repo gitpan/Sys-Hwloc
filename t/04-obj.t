@@ -1,6 +1,6 @@
 ################################################################################
 #
-#  Copyright 2010 Zuse Institute Berlin
+#  Copyright 2011 Zuse Institute Berlin
 #
 #  This package and its accompanying libraries is free software; you can
 #  redistribute it and/or modify it under the terms of the GPL version 2.0,
@@ -12,7 +12,7 @@
 #
 # Retrieve topology objects of this machine, check object properties
 #
-# $Id: 04-obj.t,v 1.13 2010/12/21 14:19:10 bzbkalli Exp $
+# $Id: 04-obj.t,v 1.14 2011/01/11 10:49:40 bzbkalli Exp $
 #
 ################################################################################
 

@@ -1,7 +1,6 @@
-
 ################################################################################
 #
-#  Copyright 2010 Zuse Institute Berlin
+#  Copyright 2011 Zuse Institute Berlin
 #
 #  This package and its accompanying libraries is free software; you can
 #  redistribute it and/or modify it under the terms of the GPL version 2.0,
@@ -13,7 +12,7 @@
 #
 # Test if Hwloc module can be loaded
 #
-# $Id: 00-use.t,v 1.6 2010/12/21 14:19:09 bzbkalli Exp $
+# $Id: 00-use.t,v 1.7 2011/01/11 10:49:39 bzbkalli Exp $
 #
 ################################################################################
 

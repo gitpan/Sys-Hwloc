@@ -1,6 +1,6 @@
 ################################################################################
 #
-#  Copyright 2010 Zuse Institute Berlin
+#  Copyright 2011 Zuse Institute Berlin
 #
 #  This package and its accompanying libraries is free software; you can
 #  redistribute it and/or modify it under the terms of the GPL version 2.0,
@@ -12,7 +12,7 @@
 #
 # Do some high-level tests with cpusets of topology objects
 #
-# $Id: 09-sets.t,v 1.5 2011/01/05 18:08:55 bzbkalli Exp $
+# $Id: 09-sets.t,v 1.6 2011/01/11 10:49:40 bzbkalli Exp $
 #
 ################################################################################
 

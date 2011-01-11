@@ -1,6 +1,6 @@
 ################################################################################
 #
-#  Copyright 2010 Zuse Institute Berlin
+#  Copyright 2011 Zuse Institute Berlin
 #
 #  This package and its accompanying libraries is free software; you can
 #  redistribute it and/or modify it under the terms of the GPL version 2.0,
@@ -12,7 +12,7 @@
 #
 # Makefile for Sys::Hwloc
 #
-# $Id: Makefile.PL,v 1.23 2010/12/29 18:14:15 bzbkalli Exp $
+# $Id: Makefile.PL,v 1.24 2011/01/11 10:49:39 bzbkalli Exp $
 #
 ################################################################################
 

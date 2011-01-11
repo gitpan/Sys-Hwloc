@@ -1,6 +1,6 @@
 ################################################################################
 #
-#  Copyright 2010 Zuse Institute Berlin
+#  Copyright 2011 Zuse Institute Berlin
 #
 #  This package and its accompanying libraries is free software; you can
 #  redistribute it and/or modify it under the terms of the GPL version 2.0,
@@ -12,13 +12,13 @@
 #
 # Test topology helpers with topology on this machine
 #
-# $Id: 06-helpers.t,v 1.11 2011/01/05 12:32:59 bzbkalli Exp $
+# $Id: 06-helpers.t,v 1.14 2011/01/11 10:49:40 bzbkalli Exp $
 #
 ################################################################################
 
 use Test::More 0.94;
 use strict;
-use Sys::Hwloc 0.04;
+use Sys::Hwloc 0.09;
 
 my $apiVersion = HWLOC_API_VERSION();
 my $proc_t     = $apiVersion ? HWLOC_OBJ_PU() : HWLOC_OBJ_PROC();
@@ -38,7 +38,7 @@ BAIL_OUT("Failed to initialize topology context via hwloc_topology_init()") unle
 $rc = hwloc_topology_load($t);
 BAIL_OUT("Failed to load topology context") if $rc;
 
-plan tests => 15;
+plan tests => 17;
 
 # --
 # Check hwloc_compare_types
@@ -297,6 +297,52 @@ SKIP: {
 };
 
 # --
+# Check hwloc_get_closest_objs on PROC objects
+# --
+
+$test = "hwloc_get_closest_objs()";
+SKIP: {
+
+  skip $test, 1 unless ($nobjs);
+  subtest $test => sub {
+
+    plan tests => 4;
+
+    $o = hwloc_get_obj_by_type($t, $proc_t, 0);
+    my @objs = hwloc_get_closest_objs($t, $o);
+    is(scalar @objs, $nobjs - 1, "hwloc_get_closest_objs(t,<proc0>)");
+    if(@objs) {
+      subtest "\@{hwloc_get_closest_objs(t,<proc0>)}" => sub {
+	plan tests => (scalar @objs) * 2;
+	foreach(@objs) {
+	  isa_ok($_, "Sys::Hwloc::Obj");
+	  is($_->type, $proc_t);
+	}
+      };
+    } else {
+      pass("\@{hwloc_get_closest_objs(t,<proc0>)}");
+    }
+
+    $o = $t->get_obj_by_type($proc_t, 0);
+    @objs = $t->get_closest_objs($o);
+    is(scalar @objs, $nobjs - 1, "t->get_closest_objs(<proc0>)");
+    if(@objs) {
+      subtest "\@{t->get_closest_objs(<proc0>)}" => sub {
+	plan tests => (scalar @objs) * 2;
+	foreach(@objs) {
+	  isa_ok($_, "Sys::Hwloc::Obj");
+	  is($_->type, $proc_t);
+	}
+      };
+    } else {
+      pass("\@{t->get_closest_objs(<proc0>)}");
+    }
+
+  };
+
+};
+
+# --
 # Check hwloc_get_next_obj_by_type on PROC objects
 # --
 
@@ -446,6 +492,52 @@ SKIP: {
 	fail($test);
       }
     }
+
+  };
+
+};
+
+# --
+# Check hwloc_get_obj_below_by_type on PROC objects
+# --
+
+$test = "hwloc_get_obj_below_by_type()";
+SKIP: {
+
+  skip $test, 1 unless ($root && $nobjs && $apiVersion);
+
+  subtest $test => sub {
+
+    plan tests => $nobjs * 4;
+
+    for(my $i = 0; $i < $nobjs; $i++) {
+      $test = sprintf("hwloc_get_obj_below_by_type(t,%d,0,%d,%d)", $root->type, $proc_t, $i);
+      $o = hwloc_get_obj_below_by_type($t, $root->type, 0, $proc_t, $i);
+      if(isa_ok($o, 'Sys::Hwloc::Obj', $test)) {
+	subtest '%(o)' => sub {
+	  plan tests => 2;
+	  is($o->type, $proc_t,     $test.'->type');
+	  is($o->logical_index, $i, $test.'->logical_index');
+	};
+      } else {
+	fail($test);
+      }
+    }
+
+    for(my $i = 0; $i < $nobjs; $i++) {
+      $test = sprintf("t->get_obj_below_by_type(%d,0,%d,%d)", $root->type, $proc_t, $i);
+      $o = $t->get_obj_below_by_type($root->type, 0, $proc_t, $i);
+      if(isa_ok($o, 'Sys::Hwloc::Obj', $test)) {
+	subtest '%(o)' => sub {
+	  plan tests => 2;
+	  is($o->type, $proc_t,     $test.'->type');
+	  is($o->logical_index, $i, $test.'->logical_index');
+	};
+      } else {
+	fail($test);
+      }
+    }
+
 
   };
 

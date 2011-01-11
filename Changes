@@ -1,5 +1,8 @@
 Revision history for Perl extension Sys::Hwloc.
 
+0.09 2011/01/11
+      - added module "Advanced Traversal Helpers"
+
 0.08 2011/01/05
       - bug fix prototype hwloc_get_next_child, added corresponding test
       - prepared for upcoming availability of hwloc_bitmap_list_snprintf/sscanf

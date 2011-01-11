@@ -1,6 +1,6 @@
 /* *******************************************************************
  *
- *  Copyright 2010 Zuse Institute Berlin
+ *  Copyright 2011 Zuse Institute Berlin
  *
  *  This package and its accompanying libraries is free software; you can
  *  redistribute it and/or modify it under the terms of the GPL version 2.0,
@@ -9,7 +9,7 @@
  *  Please send comments to kallies@zib.de
  *
  * *******************************************************************
- * $Id: Hwloc.xs,v 1.37 2011/01/05 18:08:55 bzbkalli Exp $
+ * $Id: Hwloc.xs,v 1.40 2011/01/11 10:49:38 bzbkalli Exp $
  * ******************************************************************* */
 
 #include "EXTERN.h"
@@ -1266,7 +1266,8 @@ hwloc_get_ancestor_obj_by_depth(obj,depth)
   unsigned    depth
   PROTOTYPE: $$
   ALIAS:
-    Sys::Hwloc::Obj::ancestor_by_depth = 1
+    Sys::Hwloc::Obj::get_ancestor_by_depth = 1
+    Sys::Hwloc::Obj::ancestor_by_depth     = 2
   CODE:
     PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_ancestor_obj_by_depth(NULL,depth,obj);
@@ -1280,7 +1281,8 @@ hwloc_get_ancestor_obj_by_type(obj,type)
   hwloc_obj_type_t type
   PROTOTYPE: $$
   ALIAS:
-    Sys::Hwloc::Obj::ancestor_by_type = 1
+    Sys::Hwloc::Obj::get_ancestor_by_type = 1
+    Sys::Hwloc::Obj::ancestor_by_type     = 2
   CODE:
     PERL_UNUSED_VAR(ix);
     RETVAL = hwloc_get_ancestor_obj_by_type(NULL,type,obj);
@@ -1414,6 +1416,59 @@ hwloc_compare_objects(topo,obj1,obj2)
   OUTPUT:
     RETVAL
 
+
+ # -------------------------------------------------------------------
+ # Advanced traversal helpers
+ # -------------------------------------------------------------------
+
+void
+hwloc_get_closest_objs(topo,obj)
+  hwloc_topology_t topo
+  hwloc_obj_t      obj
+  PROTOTYPE: $$
+  ALIAS:
+    Sys::Hwloc::Topology::get_closest_objs = 1
+  PREINIT:
+    int rc;
+    int i;
+    hwloc_obj_t *objs = NULL;
+  PPCODE:
+    PERL_UNUSED_VAR(ix);
+    if((objs = (hwloc_obj_t *)malloc(1024 * sizeof(hwloc_obj_t *))) == NULL)
+      croak("Failed to allocate memory");
+    rc = hwloc_get_closest_objs(topo,obj,objs,1024);
+    if(rc < 0)
+      rc = 0;
+    EXTEND(SP, rc);
+    for(i = 0; i < rc; i++)
+      PUSHs(sv_2mortal(hwlocObj2SV(objs[i])));
+    free(objs);
+    XSRETURN(rc);
+
+
+#if HWLOC_XSAPI_VERSION
+hwloc_obj_t
+hwloc_get_obj_below_by_type(topo,type1,idx1,type2,idx2)
+  hwloc_topology_t topo
+  int              type1
+  unsigned         idx1
+  int              type2
+  unsigned         idx2
+  PROTOTYPE: $$$$$
+  ALIAS:
+    Sys::Hwloc::Topology::get_obj_below_by_type = 1
+  CODE:
+    PERL_UNUSED_VAR(ix);
+    RETVAL = hwloc_get_obj_below_by_type(topo,type1,idx1,type2,idx2);
+  OUTPUT:
+    RETVAL
+
+#endif
+
+
+ # -------------------------------------------------------------------
+ # Cpuset/Bitmap API
+ # -------------------------------------------------------------------
 
 #if HWLOC_XSAPI_VERSION <= 0x00010000
 INCLUDE: hwloc_cpuset.xsh

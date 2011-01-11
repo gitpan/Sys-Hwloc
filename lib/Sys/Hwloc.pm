@@ -9,7 +9,7 @@
 #  Please send comments to kallies@zib.de
 #
 ################################################################################
-# $Id: Hwloc.pm,v 1.32 2011/01/05 18:08:55 bzbkalli Exp $
+# $Id: Hwloc.pm,v 1.36 2011/01/11 10:49:39 bzbkalli Exp $
 ################################################################################
 
 package Sys::Hwloc;
@@ -22,7 +22,7 @@ use Carp;
 
 BEGIN {
 
-  $VERSION = '0.08';
+  $VERSION = '0.09';
 
   require Exporter;
   use AutoLoader;
@@ -73,6 +73,7 @@ BEGIN {
 		hwloc_get_next_obj_by_depth hwloc_get_next_obj_by_type
 		hwloc_get_next_child
 		hwloc_get_common_ancestor_obj hwloc_obj_is_in_subtree
+		hwloc_get_closest_objs
 
 		hwloc_compare_objects
 	       );
@@ -95,6 +96,8 @@ BEGIN {
 		     hwloc_get_ancestor_obj_by_depth
 		     hwloc_get_ancestor_obj_by_type
 		     hwloc_get_pu_obj_by_os_index
+
+		     hwloc_get_obj_below_by_type
 		    );
 
     if(HWLOC_XSAPI_VERSION() > 0x00010000) {
@@ -563,34 +566,38 @@ and the corresponding Hwloc perl API OO-ish methods, if implemented.
        $val  = $t->get_type_or_below_depth($type)
        $val  = $t->get_type_or_above_depth($type)
 
-=head2 Basic traversal helpers
+=head2 Traversal helpers
 
-       $obj  = hwloc_get_system_obj($t)                          before hwloc-1.0
-       $obj  = hwloc_get_root_obj($t)                            since  hwloc-1.0
-       $obj  = hwloc_get_ancestor_obj_by_depth($obj,$depth)      since  hwloc-1.0
-       $obj  = hwloc_get_ancestor_obj_by_type($obj,$type)        since  hwloc-1.0
+       $obj  = hwloc_get_system_obj($t)                                   before hwloc-1.0
+       $obj  = hwloc_get_root_obj($t)                                     since  hwloc-1.0
+       $obj  = hwloc_get_ancestor_obj_by_depth($obj,$depth)               since  hwloc-1.0
+       $obj  = hwloc_get_ancestor_obj_by_type($obj,$type)                 since  hwloc-1.0
        $obj  = hwloc_get_next_obj_by_depth($t,$depth,$obj)
        $obj  = hwloc_get_next_obj_by_type($t,$type,$obj)
-       $obj  = hwloc_get_pu_obj_by_os_index($t,$idx)             since  hwloc-1.0
+       $obj  = hwloc_get_pu_obj_by_os_index($t,$idx)                      since  hwloc-1.0
        $obj  = hwloc_get_next_child($obj,$childobj)
        $obj  = hwloc_get_common_ancestor_obj($t,$obj1,$obj2)
        $rc   = hwloc_obj_is_in_subtree($t,$obj1,$obj2)
-       $rc   = hwloc_compare_objects($t,$obj1,$obj2)             not in hwloc
+       @objs = hwloc_get_closest_objs($t,$obj)
+       $obj  = hwloc_get_obj_below_by_type($t,$type1,$idx1,$type2,$idx2)  since hwloc-1.0
+       $rc   = hwloc_compare_objects($t,$obj1,$obj2)                      not in hwloc
 
-       $obj  = $t->system                                        before hwloc-1.0
-       $obj  = $t->root                                          since  hwloc-1.0
-       $obj  = $obj->ancestor_by_depth($depth)                   since  hwloc-1.0
-       $obj  = $obj->ancestor_by_type($type)                     since  hwloc-1.0
+       $obj  = $t->system                                                 before hwloc-1.0
+       $obj  = $t->root                                                   since  hwloc-1.0
+       $obj  = $obj->ancestor_by_depth($depth)                            since  hwloc-1.0
+       $obj  = $obj->ancestor_by_type($type)                              since  hwloc-1.0
        $obj  = $t->get_next_obj_by_depth($depth,$obj)
        $obj  = $t->get_next_obj_by_type($type,$obj)
-       $obj  = $t->get_pu_obj_by_os_index($idx)                  since  hwloc-1.0
+       $obj  = $t->get_pu_obj_by_os_index($idx)                           since  hwloc-1.0
        $obj  = $obj->next_child($childobj)
        $obj  = $t->get_common_ancestor_obj($obj1,$obj2)
        $obj  = $obj->common_ancestor($obj)
        $rc   = $t->obj_is_in_subtree($obj1,$obj2)
        $rc   = $obj->is_in_subtree($obj)
-       $rc   = $t->compare_objects($obj1,$obj2)                  not in hwloc
-       $rc   = $obj->is_same_obj($obj)                           not in hwloc
+       @objs = $t->get_closest_objs($obj)
+       $obj  = $t->get_obj_below_by_type($type1,$idx1,$type2,$idx2)       since hwloc-1.0
+       $rc   = $t->compare_objects($obj1,$obj2)                           not in hwloc
+       $rc   = $obj->is_same_obj($obj)                                    not in hwloc
 
 =head1 CPUSET API (before hwloc-1.1)
 
@@ -1075,20 +1082,50 @@ Example:
   printf("%s\n", s);
 
   # This is Perl
-  printf "%s\n", hwloc_obj_type_sprintf($obj, 1);
-  printf "%s\n", $obj->sprintf_type(1);
+  printf "%s\n", hwloc_obj_type_sprintf($obj, 1); # classic interface
+  printf "%s\n", $obj->sprintf_type(1);           # OO interface
+
+=head2 Functions that return arrays
+
+The hwloc C API contains functions, that take a pointer to
+a pre-allocated array of topology objects as parameter. The functions
+fill the array and return the number of objects in the result array.
+On error, -1 is returned. These functions are
+
+  hwloc_get_closest_objs
+  hwloc_get_largest_objs_inside_cpuset
+
+The corresponding Sys::Hwloc functions don't take an array pointer parameter,
+and return an array of B<Sys::Hwloc::Obj> instances, instead. The result
+array will contain zero to max. 1024 objects. On error, the result array
+will be empty.
+
+Example:
+
+  /* This is C */
+  hwloc_obj_t *objs;
+  int          rc;
+  objs = (hwloc_obj_t *)malloc(1024 * sizeof(hwloc_obj_t *));
+  rc   = hwloc_get_largest_objs_inside_cpuset(topo, set, objs, 1024);
+  printf("found %d objects\n", rc);
+  free(objs);
+
+  # This is Perl
+  @objs = hwloc_get_largest_objs_inside_cpuset($topo, $set);
+  printf "found %d objects\n", scalar @objs;
 
 =head2 Functions not in the hwloc C API
 
 The Sys::Hwloc module provides some functions, which are not
 part of the hwloc C API. These functions are provided for convenience
-with the hope that they are useful somehow. These are:
+with the hope that they are useful somehow. Maybe they occur in
+future hwloc versions. These are:
 
   HWLOC_XSAPI_VERSION         always returns a version number (may be 0)
   HWLOC_HAS_XML               flag if hwloc was built with XML support
   hwloc_compare_objects       compares two Sys::Hwloc::Obj by C pointer value
-  hwloc_bitmap_sscanf_list    parses a list format cpuset ASCII string
-  hwloc_bitmap_sprintf_list   outputs a list format cpuset ASCII string
+  hwloc_bitmap_list_sscanf    parses  a list format cpuset ASCII string
+  hwloc_bitmap_list_sprintf   outputs a list format cpuset ASCII string
   hwloc_bitmap_ids            returns bitmap bits as list of decimal numbers
   hwloc_bitmap_includes       reverse of hwloc_bitmap_isincluded
 
@@ -1116,7 +1153,7 @@ Bernd Kallies, E<lt>kallies@zib.deE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2010 Zuse Institute Berlin
+Copyright (C) 2011 Zuse Institute Berlin
 
 This package and its accompanying libraries is free software; you can
 redistribute it and/or modify it under the terms of the GPL version 2.0,

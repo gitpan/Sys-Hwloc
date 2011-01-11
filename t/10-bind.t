@@ -1,6 +1,6 @@
 ################################################################################
 #
-#  Copyright 2010 Zuse Institute Berlin
+#  Copyright 2011 Zuse Institute Berlin
 #
 #  This package and its accompanying libraries is free software; you can
 #  redistribute it and/or modify it under the terms of the GPL version 2.0,
@@ -12,7 +12,7 @@
 #
 # Check binding functions
 #
-# $Id: 10-bind.t,v 1.6 2010/12/29 16:15:21 bzbkalli Exp $
+# $Id: 10-bind.t,v 1.7 2011/01/11 10:49:40 bzbkalli Exp $
 #
 ################################################################################
 

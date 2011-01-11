@@ -49,7 +49,7 @@ HWLOC API VERSION
 
 The configure step figures out the value of the HWLOC_API_VERSION constant
 from hwloc.h, and compiles and exports Hwloc functions accordingly.
-Thus, the Hwloc module depends on the hwloc version it was built against.
+Thus, the Hwloc module depends on the hwloc version against which it was built.
 Undefined results are got when another hwloc library version is used at
 runtime.
 
@@ -109,19 +109,21 @@ In hwloc 0.9 and 1.0 a hwloc_obj struct defines
 the struct members cpuset and nodeset with C type hwloc_cpuset.
 Data of type hwloc_cpuset become created and manipulated with
 functions of the Cpuset API.
-When build with these hwloc versions, the Sys::Hwloc module exports
-the functions of the Cpuset API, blesses these data into the
-namespace Sys::Hwloc::Cpuset, and provides OO-ish methods for them.
+When built with these hwloc versions, the Sys::Hwloc module exports
+the functions of the Cpuset API with EXPORT_TAG :cpuset,
+blesses these data into the namespace Sys::Hwloc::Cpuset,
+and provides OO-ish methods for them.
 
 In hwloc 1.1 a hwloc_obj struct defines struct members with
 C type hwloc_cpuset, and struct members with C type hwloc_nodeset.
 Both C types are aliases of the C type hwloc_bitmap. These
 data become created and manipulated with functions of the Bitmap API.
 When built with these hwloc versions, the Sys::Hwloc module
-exports the functions of the Bitmap API, blesses these data
-into the namespace Sys::Hwloc::Bitmap, and provides OO-ish
-methods for them. A distrinction between the C types hwloc_cpuset
-and hwloc_nodeset is not made.
+exports the functions of the Bitmap API with EXPORT_TAG :bitmap,
+blesses these data into the namespace Sys::Hwloc::Bitmap,
+and provides OO-ish methods for them.
+A distrinction between the C types hwloc_cpuset and hwloc_nodeset
+is not made.
 
 
 TESTING
@@ -164,7 +166,7 @@ http://www.open-mpi.org/projects/hwloc/ how to report it.
 COPYRIGHT AND LICENSE
 ---------------------
 
-Copyright (C) 2010 Zuse Institute Berlin
+Copyright (C) 2011 Zuse Institute Berlin
 
 This package and its accompanying libraries is free software; you can
 redistribute it and/or modify it under the terms of the GPL version 2.0,
