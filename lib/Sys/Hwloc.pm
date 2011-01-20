@@ -22,7 +22,7 @@ use Carp;
 
 BEGIN {
 
-  $VERSION = '0.09';
+  $VERSION = '0.10';
 
   require Exporter;
   use AutoLoader;
